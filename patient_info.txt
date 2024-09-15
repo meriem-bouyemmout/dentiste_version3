@@ -1,0 +1,14 @@
+
+                Informations du patient :
+                ID : 18
+                Nom : oiu
+                Prénom : hl
+                Âge : ih
+                Motif : Examen médical
+                Jour : ij
+                Rendez-vous : 
+                Montant total : 2000.0
+                Versement : 500.0
+                Reste : 1500.0
+                Téléphone : jl
+                
