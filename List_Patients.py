@@ -13,6 +13,8 @@ import subprocess
 from tkinter import filedialog
 from openpyxl.styles import Font, PatternFill
 import fdb
+import pyodbc
+
 
 class List_Patients:
     def __init__(self,mast):
@@ -310,7 +312,8 @@ class List_Patients:
         conn = fdb.connect(
             dsn=database_path,
             user='SYSDBA',  # ou l'utilisateur configuré
-            password='masterkey'  # Spécifiez le chemin complet vers fbclient.dll
+            password='1234',
+            fb_library_name = fbclient_path  # Spécifiez le chemin complet vers fbclient.dll
         )
         cursor = conn.cursor()
 
@@ -350,17 +353,20 @@ class List_Patients:
                 return file.read().strip()
 
         database_path = read_database_path()
-        fbclient_path = read_fbclient_path()
+        fbclient_path = read_fbclient_path()    
 
-
+        
+        # Connexion à la base de données Firebird
         conn = fdb.connect(
-                dsn=database_path,
-                user='SYSDBA',  # ou l'utilisateur configuré
-                password='masterkey',  # ou le mot de passe configuré
-                charset='UTF8',  # Utilisez le charset correspondant à votre base de données
-                fb_library_name = fbclient_path  # Spécifiez le chemin complet vers fbclient.dll
-          )
+            dsn=database_path,
+            user='SYSDBA',  # ou l'utilisateur configuré
+            password='1234',  # ou le mot de passe configuré
+            charset='UTF8',  # Utilisez le charset correspondant à votre base de données
+            fb_library_name = fbclient_path  # Spécifiez le chemin complet vers fbclient.dll
+        )
+
         cursor = conn.cursor()
+        
 
         # Fetch data from SQLite
         cursor.execute("SELECT * FROM Patient")
@@ -437,7 +443,7 @@ class List_Patients:
         conn = fdb.connect(
             dsn=database_path,
             user='SYSDBA',  # ou l'utilisateur configuré
-            password='masterkey',  # ou le mot de passe configuré
+            password='1234',  # ou le mot de passe configuré
             charset='UTF8',  # Utilisez le charset correspondant à votre base de données
             fb_library_name = fbclient_path  # Spécifiez le chemin complet vers fbclient.dll
         )
@@ -482,7 +488,7 @@ class List_Patients:
         conn = fdb.connect(
                 dsn=database_path,
                 user='SYSDBA',  # ou l'utilisateur configuré
-                password='masterkey',  # ou le mot de passe configuré
+                password='1234',  # ou le mot de passe configuré
                 charset='UTF8',  # Utilisez le charset correspondant à votre base de données
                 fb_library_name = fbclient_path  # Spécifiez le chemin complet vers fbclient.dll
           )
@@ -539,7 +545,7 @@ class List_Patients:
         conn = fdb.connect(
             dsn=database_path,
             user='SYSDBA',  # ou l'utilisateur configuré
-            password='masterkey',  # ou le mot de passe configuré
+            password='1234',  # ou le mot de passe configuré
             charset='UTF8',  # Utilisez le charset correspondant à votre base de données
             fb_library_name=fbclient_path  # Spécifiez le chemin complet vers fbclient.dll
         )
@@ -604,7 +610,7 @@ class List_Patients:
         conn = fdb.connect(
                 dsn=database_path,
                 user='SYSDBA',  # ou l'utilisateur configuré
-                password='masterkey',  # ou le mot de passe configuré
+                password='1234',  # ou le mot de passe configuré
                 charset='UTF8',  # Utilisez le charset correspondant à votre base de données
                 fb_library_name = fbclient_path  # Spécifiez le chemin complet vers fbclient.dll
           )
@@ -667,7 +673,7 @@ class List_Patients:
         conn = fdb.connect(
                 dsn=database_path,
                 user='SYSDBA',  # ou l'utilisateur configuré
-                password='masterkey',  # ou le mot de passe configuré
+                password='1234',  # ou le mot de passe configuré
                 charset='UTF8',  # Utilisez le charset correspondant à votre base de données
                 fb_library_name = fbclient_path  # Spécifiez le chemin complet vers fbclient.dll
           )
