@@ -141,10 +141,18 @@ class List_Patients:
         image = image.resize((30, 30))
         photo_image = ImageTk.PhotoImage(image)
 
+        image_path2 = "images\\vecteezy_printer-icon-temp9.ico"
+        image2 = Image.open(image_path2)    
+        image2 = image2.resize((30, 30))
+        photo_image2 = ImageTk.PhotoImage(image2)
+
 
 
         self.buttonEXCEL=ctk.CTkButton(self.Frameleft, image=photo_image, text='Exporter vers excel', command=self.export_to_excel,height=40,  font=('Helvetica',15,'bold'))
         self.buttonEXCEL.place(x=10,y=550)
+
+        self.buttonimprimer=ctk.CTkButton(self.Frameleft, image=photo_image2, text='Imprimer les information', command=self.imprimer, height=40,  font=('Helvetica',15,'bold'))
+        self.buttonimprimer.place(x=10,y=600)
 
         
         ####################################### RIGHT ####################################################
@@ -317,12 +325,8 @@ class List_Patients:
         )
         cursor = conn.cursor()
 
-        if nom == '' or prenom == '':
-            mb.showerror('Erreur', 'Veuillez saisir le nom et le prénom', parent=self.master)
-            return
+        if (nom != '' or prenom != '' or age != ''):
 
-           
-        else:
             req = "INSERT INTO Patient(NOM, PRENOM, AGE,  NUM_TEL) values (?, ?, ?, ?) RETURNING ID"
             val = (nom, prenom, age,  tel)
             cursor.execute(req, val)
@@ -336,8 +340,12 @@ class List_Patients:
 
             self.lire()
             self.netoyer()
+            conn.close() 
 
-        conn.close()
+           
+        else:
+            mb.showerror('Erreur', "Veuillez saisir le nom et le prénom et l'age ", parent=self.master)
+            return
             
            
     def lire(self):
@@ -421,10 +429,18 @@ class List_Patients:
         # self.versement_entry.delete(0,'end')
         # self.reste_entry.delete(0,'end')
         self.tel_entry.delete(0,'end')
+        self.id_entry.delete(0,'end')
+        self.nom_entry_recherche.delete(0,'end')
+        self.prenom_entry_recherche.delete(0,'end')
 
 
     def delete(self):
-    
+     
+        nom = self.nom_entry.get()
+        prenom = self.prenom_entry.get()
+        age = self.age_entry.get()
+        tel = self.tel_entry.get()
+
         def read_database_path(file_path='data_base.txt'):
             with open(file_path, 'r') as file:
                 return file.read().strip()
@@ -438,23 +454,24 @@ class List_Patients:
         database_path = read_database_path()
         fbclient_path = read_fbclient_path()    
 
-        
-        # Connexion à la base de données Firebird
-        conn = fdb.connect(
-            dsn=database_path,
-            user='SYSDBA',  # ou l'utilisateur configuré
-            password='1234',  # ou le mot de passe configuré
-            charset='UTF8',  # Utilisez le charset correspondant à votre base de données
-            fb_library_name = fbclient_path  # Spécifiez le chemin complet vers fbclient.dll
-        )
-        cursor = conn.cursor()
-        req = ("delete from patient where ID="+self.row_id)
-        cursor.execute(req)
-        conn.commit()
-        conn.close()
-        mb.showinfo('Supprimer', 'Le patient a été supprimé', parent=self.master)
-        self.lire()
-        self.netoyer() 
+        if (nom == '' and prenom == '' and age =='' and tel == ''):
+            mb.showerror('Erreur','Veuiller choisir un patient', parent=self.master)
+        else :
+            conn = fdb.connect(
+                dsn=database_path,
+                user='SYSDBA',  # ou l'utilisateur configuré
+                password='1234',  # ou le mot de passe configuré
+                charset='UTF8',  # Utilisez le charset correspondant à votre base de données
+                fb_library_name = fbclient_path  # Spécifiez le chemin complet vers fbclient.dll
+            )
+            cursor = conn.cursor()
+            req = ("delete from patient where ID="+self.row_id)
+            cursor.execute(req)
+            conn.commit()
+            conn.close()
+            mb.showinfo('Supprimer', 'Le patient a été supprimé', parent=self.master)
+            self.lire()
+            self.netoyer() 
 
     def update(self):
       
@@ -493,33 +510,35 @@ class List_Patients:
                 fb_library_name = fbclient_path  # Spécifiez le chemin complet vers fbclient.dll
           )
         cursor = conn.cursor()
-
-        if (nom == '' or prenom == '' ) :
-           mb.showerror('Erreur','Veuiller saisir le nom et le prenom', parent=self.master)
+        if (nom == '' and prenom == '' and age == '' and tel=='') :
+            mb.showerror('Erreur','Veuiller choisir un patient', parent=self.master)
         else :
-            req = "UPDATE PATIENT set ID=? ,NOM=?, PRENOM=?, AGE=?, NUM_TEL=? WHERE ID=? "  
-            val = (self.row_id, nom, prenom, age,  tel, self.row_id)          
-            cursor.execute(req, val)        
-            
-            mb.showinfo('Mise a jour','Le patient a été modifier', parent=self.master)
-            
-            # Fetch data from SQLite
-            req2 = "SELECT * FROM Patient where ID=?"
-            cursor.execute(req2,(self.row_id,))
-            data = cursor.fetchall()
-            
-    
-            self.table.delete(*self.table.get_children())
+            if (nom == '' or prenom == '' ) :
+                mb.showerror('Erreur','Veuiller saisir le nom et le prenom', parent=self.master)
+            else :
+                req = "UPDATE PATIENT set ID=? ,NOM=?, PRENOM=?, AGE=?, NUM_TEL=? WHERE ID=? "  
+                val = (self.row_id, nom, prenom, age,  tel, self.row_id)          
+                cursor.execute(req, val)        
+                
+                mb.showinfo('Mise a jour','Le patient a été modifier', parent=self.master)
+                
+                # Fetch data from SQLite
+                req2 = "SELECT * FROM Patient where ID=?"
+                cursor.execute(req2,(self.row_id,))
+                data = cursor.fetchall()
+                
+        
+                self.table.delete(*self.table.get_children())
 
-            counter = 1  # Start from 1 or another appropriate value
-            for i in data:
-                self.table.insert('', 'end', iid=str(counter), values=i)
-                counter += 1
-            conn.commit()
-            conn.close()  
-            
-                    
-            self.netoyer()
+                counter = 1  # Start from 1 or another appropriate value
+                for i in data:
+                    self.table.insert('', 'end', iid=str(counter), values=i)
+                    counter += 1
+                conn.commit()
+                conn.close()  
+                
+                        
+                self.netoyer()
         
 
     def rechercher_ligne(self):
@@ -555,8 +574,8 @@ class List_Patients:
         
         if (id_value != '' and nom_value == '' and prenom_value == '') :
             # Rechercher par ID
-            req = "SELECT * FROM PATIENT WHERE ID LIKE ?"
-            cursor.execute(req, ('%' + id_value + '%',))
+            req = "SELECT * FROM PATIENT WHERE ID = ?"
+            cursor.execute(req, (id_value,))
         else:
             if (id_value == '' and nom_value != '' and prenom_value == '') :
                 # Rechercher par Nom
@@ -714,6 +733,18 @@ class List_Patients:
         
         finally:
             conn.close()
+
+
+    def imprimer(self):
+        nom = self.nom_entry.get()
+        prenom = self.prenom_entry.get()
+        age = self.age_entry.get()
+        tel = self.tel_entry.get()
+
+        if (nom == '' and prenom == '' and age == '' and tel=='' ) :
+            mb.showerror("Erreur", "Veuiller choisir un patient", parent=self.master)
+        else:    
+            self.imprimer_informations_patient(self.row_id)        
 
 if (__name__ == '__main__'):
     window = ctk.CTk()

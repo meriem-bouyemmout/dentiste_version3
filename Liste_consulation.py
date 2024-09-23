@@ -4,14 +4,15 @@ from tkinter import *
 from tkinter import ttk
 import customtkinter as ctk
 from tkinter import messagebox
+from PIL import Image, ImageTk
 
-class HistoriqueConsultationApp:
-    def __init__(self, mast):
+class List_consultation:
+    def __init__(self, mast, autorisation):
         self.master = mast
         self.master.title("Gestion des Consultations")
         ctk.set_appearance_mode("light")  # Modes: system (default), light, dark
         ctk.set_default_color_theme("blue")
-        self.master.configure(fg_color="white")  # Exemple pour un fond blanc
+        self.master.configure(bg="white")  # Exemple pour un fond blanc
         self.width = self.master.winfo_screenwidth()
         self.height = self.master.winfo_screenheight()
         self.master.geometry("{w}x{h}+0+0".format(w=self.width,h=self.height))
@@ -27,6 +28,13 @@ class HistoriqueConsultationApp:
         self.entry_id_patient = ctk.CTkEntry(frame_patient, width=200)
         self.entry_id_patient.grid(row=0, column=1, padx=10, pady=5)
 
+        state = ''
+        if (autorisation == 0):
+            state = DISABLED
+        else:
+            if (autorisation == 1):
+                state = NORMAL
+
         btn_search_patient = ctk.CTkButton(frame_patient, text="Chercher", command=self.search_consultations)
         btn_search_patient.grid(row=0, column=2, padx=10, pady=5)
 
@@ -37,7 +45,7 @@ class HistoriqueConsultationApp:
         label_historique = ctk.CTkLabel(frame_historique, text="Historique des Consultations:", font=("Arial", 14))
         label_historique.grid(row=0, column=0, padx=10, pady=5)
 
-        self.table_historique = ttk.Treeview(frame_historique, columns=("Date", "Operations", "Total", "Versement", "Reste"), show='headings')
+        self.table_historique = ttk.Treeview(frame_historique, columns=("Date", "Operations", "Total", "Versement", "Reste"), show='headings', height=15)
         self.table_historique.heading("Date", text="Date de Consultation")
         self.table_historique.heading("Operations", text="Opérations")
         self.table_historique.heading("Total", text="Montant Total")
@@ -52,15 +60,29 @@ class HistoriqueConsultationApp:
         self.table_historique.grid(row=1, column=0, padx=10, pady=10, columnspan=2)
 
         # Bouton pour modifier le versement
-        btn_modify_payment = ctk.CTkButton(frame_historique, text="Modifier Versement", command=self.modify_payment)
+        btn_modify_payment = ctk.CTkButton(frame_historique, text="Modifier Versement", command=self.modify_payment, state=state)
         btn_modify_payment.grid(row = 0,column = 1,padx=0, pady=20)
+
+        # Ajouter l'image en bas à droite
+        self.add_image_bottom_right()
+
+    def add_image_bottom_right(self):
+        # Charger l'image
+        image_path = "images\\tooth-1015425_640.jpg"  # Assurez-vous que le chemin est correct
+        self.image = Image.open(image_path)
+        self.image = self.image.resize((200, 200))  # Redimensionner l'image selon les besoins
+        self.photo_image = ImageTk.PhotoImage(self.image)
+
+        # Créer un label pour afficher l'image
+        self.img_label = Label(self.master, image=self.photo_image, bg="white")
+        self.img_label.place(relx=1.0, rely=1.0, anchor="se", x=-10, y=-10)
 
     def search_consultations(self):
         # Fonction pour rechercher et afficher l'historique des consultations à partir de l'ID du patient
         patient_id = self.entry_id_patient.get()
 
         if not patient_id:
-            messagebox.showerror("Erreur", "Veuillez entrer l'ID du patient.")
+            messagebox.showerror("Erreur", "Veuillez entrer l'ID du patient.", parent=self.master)
             return
 
         # Connexion à la base de données Firebird
@@ -79,7 +101,7 @@ class HistoriqueConsultationApp:
             conn = fdb.connect(
                 dsn=database_path,
                 user='SYSDBA',
-                password='masterkey',
+                password='1234',
                 charset='UTF8',
                 fb_library_name=fbclient_path
             )
@@ -122,7 +144,7 @@ class HistoriqueConsultationApp:
         selected_item = self.table_historique.selection()
 
         if not selected_item:
-            messagebox.showerror("Erreur", "Veuillez sélectionner une consultation pour modifier le versement.")
+            messagebox.showerror("Erreur", "Veuillez sélectionner une consultation pour modifier le versement.", parent=self.master)
             return
 
         # Récupérer les informations de la consultation sélectionnée
@@ -172,7 +194,7 @@ class HistoriqueConsultationApp:
             conn = fdb.connect(
                 dsn=database_path,
                 user='SYSDBA',
-                password='masterkey',
+                password='1234',
                 charset='UTF8',
                 fb_library_name=fbclient_path
             )
@@ -204,7 +226,7 @@ class HistoriqueConsultationApp:
             window.destroy()
 
         except ValueError:
-            messagebox.showerror("Erreur", "Le versement doit être un nombre valide.")
+            messagebox.showerror("Erreur", "Le versement doit être un nombre valide.", parent= self.master)
         except fdb.Error as e:
             messagebox.showerror("Erreur", f"Une erreur est survenue lors de la mise à jour de la base de données : {str(e)}")
 
@@ -214,5 +236,5 @@ class HistoriqueConsultationApp:
 if __name__ == "__main__":
     window = ctk.CTk()
     window.iconbitmap('images\\download.ico')
-    std = HistoriqueConsultationApp(window)
+    std = List_consultation(window)
     mainloop()

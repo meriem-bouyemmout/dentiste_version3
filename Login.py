@@ -7,6 +7,7 @@ import tkinter.messagebox as mb
 import Accueil as Ac
 import Profiles as Pro
 import os
+import fdb
 
 
 
@@ -44,17 +45,32 @@ class Login :
 
     def Login(self):
 
+
         def read_database_path(file_path='data_base.txt'):
             with open(file_path, 'r') as file:
                 return file.read().strip()
-
-        # Lire le chemin de la base de données depuis le fichier texte
-        database_path = read_database_path()
         
-        conn = sqlite3.connect(database_path)
-        cursor = conn.cursor() 
 
-        req = " select * from Connexion where Nom = '"+self.username.get()+"' and Mot_de_passe = '"+self.password.get()+"' "
+        # Connexion à la base de données Firebird
+        def read_fbclient_path(file_path='fb_client.txt'):
+            with open(file_path, 'r') as file:
+                return file.read().strip()
+
+        database_path = read_database_path()
+        fbclient_path = read_fbclient_path()
+
+
+        # Connexion à la base de données Firebird
+        conn = fdb.connect(
+            dsn=database_path,
+            user='SYSDBA',  # ou l'utilisateur configuré
+            password='1234',
+            fb_library_name = fbclient_path  # Spécifiez le chemin complet vers fbclient.dll
+        )
+      
+        cursor = conn.cursor()
+
+        req = " SELECT * FROM DENTISTE WHERE NOM = '"+self.username.get()+"' and MOT_DE_PASSE = '"+self.password.get()+"' "
         cursor.execute(req)
         result = cursor.fetchone()
 
@@ -70,6 +86,7 @@ class Login :
         password_path = read_password_path()
 
 
+
         if(self.username.get() == admin_path and self.password.get() == password_path ) :
                 win = Toplevel()
                 win.iconbitmap('images\\download.ico')
@@ -80,16 +97,26 @@ class Login :
 
         else:
             if (result == None) :
-                mb.showerror('Erreur','nom ou mot de passe invalider')  
+                mb.showerror('Erreur','Nom ou Mot de passe invalider')  
            
             
-          
+            else :
+                req = " SELECT ID_DENTISTE FROM DENTISTE WHERE NOM = '"+self.username.get()+"' and MOT_DE_PASSE = '"+self.password.get()+"' "
+                cursor.execute(req)
+                result = cursor.fetchone()
+                user = result[0]
+                utilisateurs_autorises = [1, 2, 3]
+                
 
-            else :         
+                if user in utilisateurs_autorises:
+                    autorisation = 1
+                else:
+                    autorisation = 0       
+
                 self.master.destroy()  
                 win = ctk.CTk()
                 win.iconbitmap('images\\download.ico')
-                uni = Ac.Accueil(win)
+                uni = Ac.Accueil(win, autorisation)
                 self.username.delete(0,'end')
                 self.password.delete(0,'end')
                 conn.close()

@@ -4,6 +4,7 @@ from tkcalendar import DateEntry  # Importer DateEntry de tkcalendar
 import customtkinter as ctk
 import fdb
 import tkinter.messagebox as mb
+import babel.numbers
 
 class List_Jour:
     def __init__(self, mast):
@@ -55,6 +56,11 @@ class List_Jour:
         self.ajouter_patient_button = ctk.CTkButton(self.frame_rdv, text="Ajouter Patient", command=self.ajouter_patient)
         self.ajouter_patient_button.grid(row=6, column=0, columnspan=2, padx=10, pady=10)
 
+        self.supprimer_patient_button = ctk.CTkButton(self.frame_rdv, text="Supprimer Patient", command=self.supprimer_patient)
+        self.supprimer_patient_button.grid(row=7, column=0, columnspan=2, padx=10, pady=10)
+ 
+
+     
         # Deuxième frame pour valider les patients qui passent
         self.frame_validation = ctk.CTkFrame(self.master,fg_color="#BCD2EE", width=800, height=800)
         self.frame_validation.grid(row=0, column=1, padx=20, pady=20)
@@ -80,6 +86,11 @@ class List_Jour:
         self.valider_patient_button = ctk.CTkButton(self.frame_validation, text="Valider Patients",font=('Helvetica',15,'bold'), command=self.valider_patients)
         self.valider_patient_button.grid(row=2, column=0, padx=10, pady=10)
 
+        
+
+
+
+
         self.patients_list = []
         self.validation_status = {}  # Dictionnaire pour stocker l'état de validation des patients
 
@@ -103,7 +114,7 @@ class List_Jour:
         conn = fdb.connect(
                 dsn=database_path,
                 user='SYSDBA',  # ou l'utilisateur configuré
-                password='masterkey',  # ou le mot de passe configuré
+                password='1234',  # ou le mot de passe configuré
                 charset='UTF8',  # Utilisez le charset correspondant à votre base de données
                 fb_library_name = fbclient_path  # Spécifiez le chemin complet vers fbclient.dll
         )
@@ -137,7 +148,7 @@ class List_Jour:
         conn = fdb.connect(
             dsn=database_path,
             user='SYSDBA',  # ou l'utilisateur configuré
-            password='masterkey',  # ou le mot de passe configuré
+            password='1234',  # ou le mot de passe configuré
             charset='UTF8',  # Utilisez le charset correspondant à votre base de données
             fb_library_name = fbclient_path  # Spécifiez le chemin complet vers fbclient.dll
         )
@@ -175,7 +186,7 @@ class List_Jour:
         conn = fdb.connect(
             dsn=database_path,
             user='SYSDBA',  # ou l'utilisateur configuré
-            password='masterkey',  # ou le mot de passe configuré
+            password='1234',  # ou le mot de passe configuré
             charset='UTF8',  # Utilisez le charset correspondant à votre base de données
             fb_library_name = fbclient_path  # Spécifiez le chemin complet vers fbclient.dll
         )
@@ -211,7 +222,6 @@ class List_Jour:
         patient_id = self.combo_id.get()
         etat = "Non"
 
-
         def read_database_path(file_path='data_base.txt'):
             with open(file_path, 'r') as file:
                 return file.read().strip()
@@ -227,18 +237,29 @@ class List_Jour:
         conn = fdb.connect(
             dsn=database_path,
             user='SYSDBA',  # ou l'utilisateur configuré
-            password='masterkey',  # ou le mot de passe configuré
+            password='1234',  # ou le mot de passe configuré
             charset='UTF8',  # Utilisez le charset correspondant à votre base de données
-            fb_library_name = fbclient_path  # Spécifiez le chemin complet vers fbclient.dll
+            fb_library_name=fbclient_path  # Spécifiez le chemin complet vers fbclient.dll
         )
         cursor = conn.cursor()
+
+        # Vérifier si le patient a déjà un rendez-vous pour ce jour
+        cursor.execute("SELECT COUNT(*) FROM RENDEZ_VOUS WHERE ID_PATIENT = ? AND JOUR = ?", (patient_id, jour))
+        rdv_count = cursor.fetchone()[0]
+
+        if rdv_count > 0:
+            # Afficher un message d'erreur si le patient a déjà un rendez-vous pour cette date
+            mb.showerror('Erreur', 'Ce patient a déjà un rendez-vous pour cette date.', parent=self.master)
+            conn.close()
+            return
+
         # Requête pour obtenir les informations du patient
         cursor.execute("SELECT NOM, PRENOM, NUM_TEL FROM Patient WHERE ID = ?", (patient_id,))
         patient_data = cursor.fetchone()        
-        
-        if patient_id:
+
+        if patient_id and patient_data:
             # Ajouter le patient dans le tableau
-            item_id = self.table_patients.insert("", "end", values=(patient_id,patient_data[0],patient_data[1],patient_data[2], etat))
+            item_id = self.table_patients.insert("", "end", values=(patient_id, patient_data[0], patient_data[1], patient_data[2], etat))
             self.patients_list.append(patient_id)
 
             # Initialiser la validation à "Non"
@@ -247,17 +268,17 @@ class List_Jour:
             # Réinitialiser le champ ID
             self.combo_id.set("")
 
-            
-            # Requête pour obtenir les informations du patient
+            # Ajouter le rendez-vous à la base de données
             val = (patient_id, 1, etat, jour)
-            req = "INSERT INTO RENDEZ_VOUS (ID_PATIENT, ID_DENTISTE, ETAT, JOUR)VALUES (?, ?, ?, ?)"
+            req = "INSERT INTO RENDEZ_VOUS (ID_PATIENT, ID_DENTISTE, ETAT, JOUR) VALUES (?, ?, ?, ?)"
             cursor.execute(req, val)
             conn.commit()
-        else :
-            if not patient_id:    
+        else:
+            if not patient_id:
                 mb.showerror('Erreur', 'Veuillez saisir le ID du patient', parent=self.master)
 
         conn.close()
+
 
     def valider_patients(self):
         selected_items = self.table_patients.selection()
@@ -277,7 +298,7 @@ class List_Jour:
         conn = fdb.connect(
             dsn=database_path,
             user='SYSDBA',  # ou l'utilisateur configuré
-            password='masterkey',  # ou le mot de passe configuré
+            password='1234',  # ou le mot de passe configuré
             charset='UTF8',  # Utilisez le charset correspondant à votre base de données
             fb_library_name = fbclient_path  # Spécifiez le chemin complet vers fbclient.dll
         )
@@ -309,6 +330,61 @@ class List_Jour:
                 print(f"Patient validé : {self.table_patients.item(item_id)['values']}")
             else:
                 print(f"Patient non validé : {self.table_patients.item(item_id)['values']}")
+    
+
+    
+    def supprimer_patient(self):
+        selected_items = self.table_patients.selection()
+
+        if not selected_items:
+            mb.showerror('Erreur', 'Veuillez sélectionner un patient à supprimer', parent=self.master)
+            return
+
+        def read_database_path(file_path='data_base.txt'):
+            with open(file_path, 'r') as file:
+                return file.read().strip()
+
+        # Connexion à la base de données Firebird
+        def read_fbclient_path(file_path='fb_client.txt'):
+            with open(file_path, 'r') as file:
+                return file.read().strip()
+
+        database_path = read_database_path()
+        fbclient_path = read_fbclient_path()
+
+        conn = fdb.connect(
+            dsn=database_path,
+            user='SYSDBA',  # ou l'utilisateur configuré
+            password='1234',  # ou le mot de passe configuré
+            charset='UTF8',  # Utilisez le charset correspondant à votre base de données
+            fb_library_name=fbclient_path  # Spécifiez le chemin complet vers fbclient.dll
+        )
+        cursor = conn.cursor()
+
+        for item_id in selected_items:
+            # Récupère les informations du patient sélectionné
+            patient_values = self.table_patients.item(item_id)["values"]
+            patient_id = patient_values[0]
+            jour = self.entry_date.get()
+
+            # Suppression du patient de la base de données
+            query = "DELETE FROM RENDEZ_VOUS WHERE ID_PATIENT = ? AND JOUR = ?"
+            cursor.execute(query, (patient_id, jour))
+
+            # Suppression du patient de l'interface
+            self.table_patients.delete(item_id)
+
+        # Commit des changements dans la base de données
+        conn.commit()
+        conn.close()
+
+        
+ 
+
+
+
+
+
 
 
 if (__name__ == '__main__'):

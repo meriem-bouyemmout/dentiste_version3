@@ -9,6 +9,7 @@ from openpyxl import load_workbook
 import pathlib
 import sqlite3
 from tkinter import filedialog
+import fdb
 
 
 class Profiles:
@@ -33,13 +34,16 @@ class Profiles:
         #############################################################################################
         self.Nom = ctk.CTkLabel(self.Frameleft,text="Nom d'utilisateur", font=('Helvetica',15))
         self.Nom.place(x=10,y=20 )
+        self.Prenom = ctk.CTkLabel(self.Frameleft,text="Prenom", font=('Helvetica',15))
+        self.Prenom.place(x=10,y=60 )
         self.Mot_de_passe = ctk.CTkLabel(self.Frameleft,text="Mot de passe", font=('Helvetica',15))
-        self.Mot_de_passe.place(x=10,y=60 )
+        self.Mot_de_passe.place(x=10,y=100 )
        
 ######################################################################
         
         self.nom = StringVar()
         self.prenom = StringVar()
+        self.password = StringVar()
       
 
     
@@ -53,6 +57,9 @@ class Profiles:
         self.prenom_entry = ctk.CTkEntry(self.Frameleft, font=('tahoma',12), textvariable = self.prenom)
         self.prenom_entry.configure(justify="center")
         self.prenom_entry.place(x=120,y=60)
+        self.password_entry = ctk.CTkEntry(self.Frameleft, font=('tahoma',12), textvariable = self.password)
+        self.password_entry.configure(justify="center")
+        self.password_entry.place(x=120,y=100)
         
 
 
@@ -60,7 +67,7 @@ class Profiles:
         self.buttonAdd.place(x=10,y=450)
         self.buttonDELETE=ctk.CTkButton(self.Frameleft,text='Supprimer', command=self.delete,  font=('Helvetica',15,'bold'))
         self.buttonDELETE.place(x=155,y=450)
-        self.buttonUP=ctk.CTkButton(self.Frameleft,text='Mise a jour', command=self.update,  font=('Helvetica',15,'bold'))
+        self.buttonUP=ctk.CTkButton(self.Frameleft,text='Modifier', command=self.update,  font=('Helvetica',15,'bold'))
         self.buttonUP.place(x=10,y=485)
         self.buttonRESET=ctk.CTkButton(self.Frameleft,text='Nettoyer', command=self.netoyer,  font=('Helvetica',15,'bold'))
         self.buttonRESET.place(x=155,y=485)
@@ -112,7 +119,7 @@ class Profiles:
 
         
 
-        self.table = ttk.Treeview(self.frameView, style='Treeview.Heading', column= ("ID","Nom","Mot_de_passe"), show='headings', height=17 , yscrollcommand=self.scrollbar.set)
+        self.table = ttk.Treeview(self.frameView, style='Treeview.Heading', column= ("ID","Nom","Prenom","Mot_de_passe"), show='headings', height=17 , yscrollcommand=self.scrollbar.set)
         self.scrollbar.pack(side=RIGHT, fill=Y)
         self.scrollbar.config(command=self.table.yview())       
         self.table.pack(fill=BOTH)
@@ -120,11 +127,13 @@ class Profiles:
 
         self.table.heading("ID",text="ID")
         self.table.heading("Nom",text="Nom")
+        self.table.heading("Prenom",text="Prenom")
         self.table.heading("Mot_de_passe",text="Mot de passe")
         
        
         self.table.column("ID", anchor=W, width=5)
         self.table.column("Nom", anchor=W, width=5)
+        self.table.column("Prenom", anchor=W, width=5)
         self.table.column("Mot_de_passe", anchor=W, width=6)
         
         
@@ -137,63 +146,94 @@ class Profiles:
 
 
     def ajouter(self):
-          nom = self.nom_entry.get()
-          prenom = self.prenom_entry.get()
-          
+        nom = self.nom_entry.get()
+        prenom = self.prenom_entry.get()
+        password = self.password_entry.get()
+        
+        def read_database_path(file_path='data_base.txt'):
+            with open(file_path, 'r') as file:
+                return file.read().strip()
+        
 
-          # Connect to SQLite database
-          def read_database_path(file_path='data_base.txt'):
+        # Connexion à la base de données Firebird
+        def read_fbclient_path(file_path='fb_client.txt'):
             with open(file_path, 'r') as file:
                 return file.read().strip()
 
-        # Lire le chemin de la base de données depuis le fichier texte
-          database_path = read_database_path()
-          conn = sqlite3.connect(database_path)
-          cursor = conn.cursor()
+        database_path = read_database_path()
+        fbclient_path = read_fbclient_path()
 
-          # Fetch data from SQLite
-          
 
-          if (nom == '' or prenom == '' ) :
-           mb.showerror('Erreur','Veuiller saisir le nom et le mot de passe', parent=self.master)
-          else :
-              req = "INSERT INTO Connexion(Nom, Mot_de_passe) values ( ?, ?)"  
-              val = (nom, prenom)          
-              cursor.execute(req, val)        
-              conn.commit()
-              conn.close() 
-              mb.showinfo('Succes ajoute','Donnees inserees', parent=self.master)
-              self.lire()          
-              self.netoyer()
+        # Connexion à la base de données Firebird
+        conn = fdb.connect(
+            dsn=database_path,
+            user='SYSDBA',  # ou l'utilisateur configuré
+            password='1234',
+            fb_library_name = fbclient_path  # Spécifiez le chemin complet vers fbclient.dll
+        )
+
+        
+        cursor = conn.cursor()
+
+        # Fetch data from SQLite
+        
+
+        if (nom == '' and password == '' ) :
+            mb.showerror('Erreur','Veuiller saisir le nom et le mot de passe', parent=self.master)
+        else :
+            req = "INSERT INTO DENTISTE(NOM, PRENOM, MOT_DE_PASSE) values ( ?, ?, ?)"  
+            val = (nom, prenom, password)          
+            cursor.execute(req, val)        
+            conn.commit()
+            conn.close() 
+            mb.showinfo('Succes ajoute','Donnees inserees', parent=self.master)
+            self.lire()          
+            self.netoyer()
 
        
    
     def lire(self):
           
-          # Connect to SQLite database
-          def read_database_path(file_path='data_base.txt'):
+        def read_database_path(file_path='data_base.txt'):
+            with open(file_path, 'r') as file:
+                return file.read().strip()
+        
+
+        # Connexion à la base de données Firebird
+        def read_fbclient_path(file_path='fb_client.txt'):
             with open(file_path, 'r') as file:
                 return file.read().strip()
 
-        # Lire le chemin de la base de données depuis le fichier texte
-          database_path = read_database_path()
-          conn = sqlite3.connect(database_path)
-          cursor = conn.cursor()
+        database_path = read_database_path()
+        fbclient_path = read_fbclient_path()
 
-          # Fetch data from SQLite
-          #req = "SELECT Nom, Prenom, Age, Motif, Jour, Rendez_vous, Montant_total, Versement, Reste, Num_de_tel FROM Patient" 
-          cursor.execute("SELECT * FROM Connexion")
-          data = cursor.fetchall()
 
-  
-          self.table.delete(*self.table.get_children())
+        # Connexion à la base de données Firebird
+        conn = fdb.connect(
+            dsn=database_path,
+            user='SYSDBA',  # ou l'utilisateur configuré
+            password='1234',
+            fb_library_name = fbclient_path  # Spécifiez le chemin complet vers fbclient.dll
+        )
 
-          counter = 1  # Start from 1 or another appropriate value
-          for i in data:
+        
+        cursor = conn.cursor()
+
+        # Fetch data from SQLite
+        #req = "SELECT Nom, Prenom, Age, Motif, Jour, Rendez_vous, Montant_total, Versement, Reste, Num_de_tel FROM Patient" 
+        cursor.execute("SELECT * FROM DENTISTE")
+        data = cursor.fetchall()
+        print(data)
+
+
+        self.table.delete(*self.table.get_children())
+
+        counter = 1  # Start from 1 or another appropriate value
+        for i in data:
             self.table.insert('', 'end', iid=str(counter), values=i)
             counter += 1
- 
-          conn.close()  
+
+        conn.close()  
               
     def show(self,ev): 
         selected_item = self.table.selection()
@@ -207,6 +247,7 @@ class Profiles:
         val = alldata['values']
         self.nom.set(val[1])
         self.prenom.set(val[2])
+        self.password.set(val[3])
         
     def voir(self):
         # Call your read function to refresh the table with all data
@@ -218,32 +259,64 @@ class Profiles:
     def netoyer(self):
         self.nom_entry.delete(0,'end')
         self.prenom_entry.delete(0,'end')
+        self.password_entry.delete(0,'end')
         
 
 
     def delete(self):
-    
+
+        nom = self.nom_entry.get()
+        prenom = self.prenom_entry.get()
+        password = self.password_entry.get() 
+
+         
         # Connect to SQLite database
         def read_database_path(file_path='data_base.txt'):
             with open(file_path, 'r') as file:
                 return file.read().strip()
+        
 
-        # Lire le chemin de la base de données depuis le fichier texte
+        # Connexion à la base de données Firebird
+        def read_fbclient_path(file_path='fb_client.txt'):
+            with open(file_path, 'r') as file:
+                return file.read().strip()
+
         database_path = read_database_path()
-        conn = sqlite3.connect(database_path)
+        fbclient_path = read_fbclient_path()
+
+
+        # Connexion à la base de données Firebird
+        conn = fdb.connect(
+            dsn=database_path,
+            user='SYSDBA',  # ou l'utilisateur configuré
+            password='1234',
+            fb_library_name = fbclient_path  # Spécifiez le chemin complet vers fbclient.dll
+        )
+
+        
         cursor = conn.cursor()
-        req = ("delete from Connexion where ID="+self.row_id)
-        cursor.execute(req)
-        conn.commit()
-        conn.close()
-        mb.showinfo("Supprimer", "L'utilisateur a été supprimé", parent=self.master)
-        self.lire()
-        self.netoyer() 
+
+        if (nom == '' and prenom == '' and password == '' ) :
+                mb.showerror('Erreur',"Veuiller choisir un utilisateur", parent=self.master)
+        
+        else :
+            if self.row_id in ["1", "2", "3"]:
+                mb.showerror("Erreur", "La suppression de cet utilisateur est interdite", parent=self.master)
+        
+            else:    
+                req = ("DELETE FROM DENTISTE WHERE ID_DENTISTE="+self.row_id)
+                cursor.execute(req)
+                conn.commit()
+                conn.close()
+                mb.showinfo("Supprimer", "L'utilisateur a été supprimé", parent=self.master)
+                self.lire()
+                self.netoyer() 
 
     def update(self):
       
         nom = self.nom_entry.get()
         prenom = self.prenom_entry.get()
+        password = self.password_entry.get()
         
 
         # print(nom, prenom, age, motif, jour, rendez_vous, montant_total, versement, reste, tel )  
@@ -251,23 +324,41 @@ class Profiles:
         def read_database_path(file_path='data_base.txt'):
             with open(file_path, 'r') as file:
                 return file.read().strip()
+        
 
-        # Lire le chemin de la base de données depuis le fichier texte
+        # Connexion à la base de données Firebird
+        def read_fbclient_path(file_path='fb_client.txt'):
+            with open(file_path, 'r') as file:
+                return file.read().strip()
+
         database_path = read_database_path()
-        conn = sqlite3.connect(database_path)
+        fbclient_path = read_fbclient_path()
+
+
+        # Connexion à la base de données Firebird
+        conn = fdb.connect(
+            dsn=database_path,
+            user='SYSDBA',  # ou l'utilisateur configuré
+            password='1234',
+            fb_library_name = fbclient_path  # Spécifiez le chemin complet vers fbclient.dll
+        )
+      
         cursor = conn.cursor()
 
-        if (nom == '' or prenom == '' ) :
-           mb.showerror('Erreur',"Veuiller saisir le nom d'utlisateur et le mot de passe", parent=self.master)
+        if (nom == '' and prenom == '' and password == '' ) :
+            mb.showerror('Erreur',"Veuiller choisir un utilisateur", parent=self.master)
         else :
-              req = "UPDATE Connexion set ID=? ,Nom=?, Mot_de_passe=? WHERE ID=? "  
-              val = (self.row_id, nom, prenom, self.row_id)          
-              cursor.execute(req, val)        
-              conn.commit()
-              conn.close() 
-              mb.showinfo('Mise a jour',"L'utlisateur a été mis à jour", parent=self.master)
-              self.lire()          
-              self.netoyer()
+            if (nom == '' and password == '' ) :
+                mb.showerror('Erreur',"Veuiller saisir le nom d'utlisateur et le mot de passe", parent=self.master)
+            else :
+                req = "UPDATE DENTISTE set ID_DENTISTE=? ,NOM=?, PRENOM=?, MOT_DE_PASSE=? WHERE ID_DENTISTE=? "  
+                val = (self.row_id, nom, prenom, password, self.row_id)          
+                cursor.execute(req, val)        
+                conn.commit()
+                conn.close() 
+                mb.showinfo('Mise a jour',"L'utlisateur a été modifier", parent=self.master)
+                self.lire()          
+                self.netoyer()
         
 
     def rechercher_ligne_par_valeur(self):
@@ -276,19 +367,33 @@ class Profiles:
         def read_database_path(file_path='data_base.txt'):
             with open(file_path, 'r') as file:
                 return file.read().strip()
+        
 
-        # Lire le chemin de la base de données depuis le fichier texte
+        # Connexion à la base de données Firebird
+        def read_fbclient_path(file_path='fb_client.txt'):
+            with open(file_path, 'r') as file:
+                return file.read().strip()
+
         database_path = read_database_path()
-        conn = sqlite3.connect(database_path)
+        fbclient_path = read_fbclient_path()
+
+
+        # Connexion à la base de données Firebird
+        conn = fdb.connect(
+            dsn=database_path,
+            user='SYSDBA',  # ou l'utilisateur configuré
+            password='1234',
+            fb_library_name = fbclient_path  # Spécifiez le chemin complet vers fbclient.dll
+        )
+      
         cursor = conn.cursor()
 
     # Remplacez 'nom_de_la_table' par le nom réel de votre table et 'nom_colonne' par le nom de la colonne dans laquelle vous voulez rechercher.
-        req = (f"SELECT * FROM Connexion WHERE Nom LIKE ?")
+        req = (f"SELECT * FROM DENTISTE WHERE ID_DENTISTE LIKE ?")
         cursor.execute(req, ('%' + rechercher_entry + '%',))
 
     # Utilisation du caractère joker '%' pour rechercher partiellement la valeur
         resultats = cursor.fetchall()
-        print(resultats)
         if  not resultats: 
     
             mb.showerror("Erreur","L'utlisateur n'existe pas ", parent=self.master)  

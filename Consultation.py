@@ -4,15 +4,17 @@ from tkinter import ttk
 from tkcalendar import DateEntry
 import tkinter.messagebox as mb
 import customtkinter as ctk
-import fdb  # Assure-toi d'utiliser le bon module pour accéder à ta base de données
+from PIL import Image, ImageTk
+import fdb
+import babel.numbers  # Assure-toi d'utiliser le bon module pour accéder à ta base de données
 
-class ConsultationApp:
+class Consultation:
     def __init__(self, mast):
         self.master = mast
         self.master.title("Gestion des Consultations")
         ctk.set_appearance_mode("light")  # Modes: system (default), light, dark
         ctk.set_default_color_theme("blue")
-        self.master.configure(fg_color="white")  # Exemple pour un fond blanc
+        self.master.configure(bg="white")  # Exemple pour un fond blanc
         self.width = self.master.winfo_screenwidth()
         self.height = self.master.winfo_screenheight()
         self.master.geometry("{w}x{h}+0+0".format(w=self.width,h=self.height))
@@ -31,7 +33,7 @@ class ConsultationApp:
         frame_patient = ctk.CTkFrame(self.master, fg_color="#BCD2EE")
         frame_patient.pack(padx=10, pady=10, fill="x")
 
-        label_patient = ctk.CTkLabel(frame_patient, text="ID du Patient:", font=("Arial", 14))
+        label_patient = ctk.CTkLabel(frame_patient, text="ID du Patient:", font=("Arial", 15, 'bold'))
         label_patient.grid(row=0, column=0, padx=10, pady=5)
 
         self.entry_id_patient = ctk.CTkEntry(frame_patient, width=200)
@@ -41,20 +43,20 @@ class ConsultationApp:
         btn_search_patient.grid(row=0, column=2, padx=10, pady=5)
 
         # Labels pour afficher les informations du patient
-        self.label_nom = ctk.CTkLabel(frame_patient, text="", font=("Arial", 12))
+        self.label_nom = ctk.CTkLabel(frame_patient, text="", font=("Arial", 15, 'bold'))
         self.label_nom.grid(row=1, column=0, columnspan=3, padx=10, pady=5)
 
-        self.label_prenom = ctk.CTkLabel(frame_patient, text="", font=("Arial", 12))
+        self.label_prenom = ctk.CTkLabel(frame_patient, text="", font=("Arial", 15, 'bold'))
         self.label_prenom.grid(row=2, column=0, columnspan=3, padx=10, pady=5)
 
-        self.label_age = ctk.CTkLabel(frame_patient, text="", font=("Arial", 12))
+        self.label_age = ctk.CTkLabel(frame_patient, text="", font=("Arial", 15, 'bold'))
         self.label_age.grid(row=3, column=0, columnspan=3, padx=10, pady=5)
 
         # Section Date de Consultation
         frame_date = ctk.CTkFrame(self.master, fg_color="#BCD2EE")
         frame_date.pack(padx=10, pady=10, fill="x")
 
-        label_date = ctk.CTkLabel(frame_date, text="Date de Consultation:", font=("Arial", 14))
+        label_date = ctk.CTkLabel(frame_date, text="Date de Consultation:", font=("Arial", 15, 'bold'))
         label_date.grid(row=0, column=0, padx=10, pady=5)
 
         self.date_entry = DateEntry(frame_date, width=15, background='darkblue', foreground='white', borderwidth=2, year=2024)
@@ -64,7 +66,7 @@ class ConsultationApp:
         frame_operations = ctk.CTkFrame(self.master, fg_color="#BCD2EE")
         frame_operations.pack(padx=10, pady=10, fill="both", expand=True)
 
-        label_operations = ctk.CTkLabel(frame_operations, text="Opérations effectuées:", font=("Arial", 14))
+        label_operations = ctk.CTkLabel(frame_operations, text="Opérations effectuées:", font=("Arial", 15, 'bold'))
         label_operations.grid(row=0, column=0, padx=10, pady=5)
 
         self.table_operations = ttk.Treeview(frame_operations, columns=("Operation", "Prix"), show='headings')
@@ -82,25 +84,43 @@ class ConsultationApp:
         btn_delete_operation = ctk.CTkButton(frame_operations, text="Supprimer Opération", command=self.delete_operation)
         btn_delete_operation.grid(row=2, column=1, padx=10, pady=5)
 
+ 
+        
+
+       
+        # Ajouter une image à droite de frame_operations
+        self.image_path = "images\\tooth-1015404_640.jpg"  # Assure-toi que le chemin est correct
+        self.image = Image.open(self.image_path)
+        self.image = self.image.resize((300, 317))
+        self.photo_image = ImageTk.PhotoImage(self.image)
+
+
+
+
+
+        label_image = tk.Label(frame_operations, image=self.photo_image, bg="#BCD2EE")
+        label_image.grid(row=0, column=3, rowspan=3, padx=20, pady=10)        
+        label_image.place(relx=1.0, rely=1.0, anchor="se", x=0, y=0)
+
 
         # Section Paiement
         frame_paiement = ctk.CTkFrame(self.master, fg_color="#BCD2EE")
         frame_paiement.pack(padx=10, pady=10, fill="x")
 
-        label_total = ctk.CTkLabel(frame_paiement, text="Montant Total:", font=("Arial", 14))
+        label_total = ctk.CTkLabel(frame_paiement, text="Montant Total:", font=("Arial", 15, 'bold'))
         label_total.grid(row=0, column=0, padx=10, pady=5)
 
         self.entry_total = ctk.CTkEntry(frame_paiement, width=100, textvariable=self.total, state='readonly')
         self.entry_total.grid(row=0, column=1, padx=10, pady=5)
 
-        label_versement = ctk.CTkLabel(frame_paiement, text="Versement:", font=("Arial", 14))
+        label_versement = ctk.CTkLabel(frame_paiement, text="Versement:", font=("Arial", 15, 'bold'))
         label_versement.grid(row=1, column=0, padx=10, pady=5)
 
         self.entry_versement = ctk.CTkEntry(frame_paiement, width=100, textvariable=self.versement)
         self.entry_versement.grid(row=1, column=1, padx=10, pady=5)
         self.entry_versement.bind("<KeyRelease>", self.update_reste)
 
-        label_reste = ctk.CTkLabel(frame_paiement, text="Reste à payer:", font=("Arial", 14))
+        label_reste = ctk.CTkLabel(frame_paiement, text="Reste à payer:", font=("Arial", 15, 'bold'))
         label_reste.grid(row=2, column=0, padx=10, pady=5)
 
         self.entry_reste = ctk.CTkEntry(frame_paiement, width=100, textvariable=self.reste, state='readonly')
@@ -150,7 +170,7 @@ class ConsultationApp:
             conn = fdb.connect(
                     dsn=database_path,
                     user='SYSDBA',  # ou l'utilisateur configuré
-                    password='masterkey',  # ou le mot de passe configuré
+                    password='1234',  # ou le mot de passe configuré
                     charset='UTF8',  # Utilisez le charset correspondant à votre base de données
                     fb_library_name = fbclient_path  # Spécifiez le chemin complet vers fbclient.dll
             )
@@ -198,15 +218,26 @@ class ConsultationApp:
             self.update_total()
 
     def delete_operation(self):
-        # Supprime l'opération sélectionnée
+        # Supprime l'opération sélectionnée et met à jour le total
         selected_item = self.table_operations.selection()
         if selected_item:
-            self.table_operations.delete(selected_item)
-            for i, (operation, prix) in enumerate(self.operations):
-                if operation == self.table_operations.item(selected_item, 'values')[0]:
+            # Récupérer les valeurs de l'opération sélectionnée (opération, prix)
+            selected_values = self.table_operations.item(selected_item, 'values')
+            operation = selected_values[0]
+            prix = float(selected_values[1])
+
+            # Supprime l'opération de la liste des opérations
+            for i, (op, pr) in enumerate(self.operations):
+                if op == operation and pr == prix:
                     del self.operations[i]
                     break
+
+            # Supprime l'opération du tableau Treeview
+            self.table_operations.delete(selected_item)
+
+            # Met à jour le montant total et le reste à payer
             self.update_total()
+
 
     def update_total(self):
         # Met à jour le montant total en fonction des opérations ajoutées
@@ -237,7 +268,7 @@ class ConsultationApp:
             conn = fdb.connect(
                 dsn=database_path,
                 user='SYSDBA',
-                password='masterkey',
+                password='1234',
                 charset='UTF8',
                 fb_library_name=fbclient_path
             )
@@ -319,5 +350,5 @@ class ConsultationApp:
 if __name__ == "__main__":
     window = ctk.CTk()
     window.iconbitmap('images\\download.ico')
-    std = ConsultationApp(window)
+    std = Consultation(window)
     mainloop()
