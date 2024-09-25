@@ -27,22 +27,48 @@ canvas.create_image(0, 0, anchor=tk.NW, image=photo)
 
 # Positions des boutons (tu devras ajuster les coordonnées en fonction de l'image)
 teeth_positions = {
-    1: (150, 250),
-    2: (160, 210),
-    3: (170, 170),
-    4: (175, 135),
-    5: (185, 105),
-    6: (200, 75),
-    7: (230, 55),
-    8: (265, 45),
-    9: ()
+    # HAUT
+    1: (155, 255),
+    2: (160, 217),
+    3: (170, 175),
+    4: (180, 140),
+    5: (190, 110),
+    6: (210, 80),
+    7: (235, 60),
+    8: (270, 55),
+    9: (310, 55),
+    10:(345, 60),
+    11:(370, 80),
+    12:(385, 110),
+    13:(400, 140),
+    14:(410, 175),
+    15:(420, 217),
+    16:(425, 255),
+    # BAS
+    17:(165, 345),
+    18:(170, 385),
+    19:(175, 425),
+    20:(190, 455),
+    21:(200, 485),
+    22:(225, 510),
+    23:(250, 525),
+    24:(275, 535),
+    25:(305, 535),
+    26:(330, 525),
+    27:(357, 510),
+    28:(380, 485),
+    29:(390, 455),
+    30:(407, 425),
+    31:(412, 385),
+    32:(417, 345)
+    
 }
 
 # Créer des boutons pour chaque dent
 for tooth_number, (x, y) in teeth_positions.items():
     button = tk.Button(root, text=f"{tooth_number}", command=lambda t=tooth_number: show_tooth_number(t))
     # Positionner chaque bouton au-dessus de la dent
-    button.place(x=x, y=y, width=30, height=30)
+    button.place(x=x, y=y, width=20, height=20)
 
 # Lancer la fenêtre principale
 root.mainloop()

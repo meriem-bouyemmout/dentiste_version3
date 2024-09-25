@@ -7,7 +7,7 @@ from tkinter import messagebox
 from PIL import Image, ImageTk
 
 class List_consultation:
-    def __init__(self, mast, autorisation):
+    def __init__(self, mast):
         self.master = mast
         self.master.title("Gestion des Consultations")
         ctk.set_appearance_mode("light")  # Modes: system (default), light, dark
@@ -28,12 +28,12 @@ class List_consultation:
         self.entry_id_patient = ctk.CTkEntry(frame_patient, width=200)
         self.entry_id_patient.grid(row=0, column=1, padx=10, pady=5)
 
-        state = ''
-        if (autorisation == 0):
-            state = DISABLED
-        else:
-            if (autorisation == 1):
-                state = NORMAL
+        # state = ''
+        # if (autorisation == 0):
+        #     state = DISABLED
+        # else:
+        #     if (autorisation == 1):
+        #         state = NORMAL
 
         btn_search_patient = ctk.CTkButton(frame_patient, text="Chercher", command=self.search_consultations)
         btn_search_patient.grid(row=0, column=2, padx=10, pady=5)
@@ -60,7 +60,7 @@ class List_consultation:
         self.table_historique.grid(row=1, column=0, padx=10, pady=10, columnspan=2)
 
         # Bouton pour modifier le versement
-        btn_modify_payment = ctk.CTkButton(frame_historique, text="Modifier Versement", command=self.modify_payment, state=state)
+        btn_modify_payment = ctk.CTkButton(frame_historique, text="Modifier Versement", command=self.modify_payment)
         btn_modify_payment.grid(row = 0,column = 1,padx=0, pady=20)
 
         # Ajouter l'image en bas à droite

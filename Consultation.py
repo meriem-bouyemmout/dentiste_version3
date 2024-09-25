@@ -145,8 +145,10 @@ class Consultation:
             "Prothèse Désinée Haut": 25000,
             "Prothèse Désinée Bas": 25000,
             "Prothèse Composite Haut": 30000,
-            "Prothèse Composite Bas": 30000
+            "Prothèse Composite Bas": 30000,
+            "Autre": 0
         }
+   
 
     def search_patient(self):
         # Fonction pour rechercher et afficher les informations du patient
@@ -211,11 +213,41 @@ class Consultation:
     def confirm_add_operation(self):
         # Ajoute l'opération sélectionnée à la table et met à jour le total
         operation = self.operation_var.get()
-        if operation:
-            prix = self.prix_operations[operation]
-            self.table_operations.insert("", "end", values=(operation, prix))
-            self.operations.append((operation, prix))
-            self.update_total()
+        if operation == "Autre" :
+            self.manual_entry_window()
+        else:
+            if operation :    
+                prix = self.prix_operations[operation]
+                self.table_operations.insert("", "end", values=(operation, prix))
+                self.operations.append((operation, prix))
+                self.update_total()
+
+    def manual_entry_window(self):
+        # Créer une nouvelle fenêtre
+        manual_window = Toplevel(self.master)
+        manual_window.title("Saisie Manuelle")
+        manual_window.config(bg="#f0f0f0")  # Fond de la fenêtre
+
+        # Définir une police personnalisée
+        # custom_font = font.Font(family="Arial", size=12)
+
+        Label(manual_window, text="Nom de l'opération:", bg="#f0f0f0", font=("Arial", 12)).pack(pady=10)
+        manual_operation = Entry(manual_window, font="Arial", bd=2, relief="solid", width=30)
+        manual_operation.pack(pady=10)
+
+        Label(manual_window, text="Prix:", bg="#f0f0f0", font="Arial").pack(pady=10)
+        manual_price = Entry(manual_window, font="Arial", bd=2, relief="solid", width=30)
+        manual_price.pack(pady=10)
+
+        # Bouton pour soumettre les données
+        submit_button = Button(manual_window, text="Soumettre", command=lambda: self.submit(manual_operation.get(), manual_price.get()), bg="#4CAF50", fg="white", font="Arial")
+        submit_button.pack(pady=15)
+        submit_button.config(width=20)
+
+    def submit(self,operation, price):
+        # Traiter les données soumises
+        print(f"Opération: {operation}, Prix: {price}")     
+
 
     def delete_operation(self):
         # Supprime l'opération sélectionnée et met à jour le total
@@ -291,7 +323,7 @@ class Consultation:
 
             if count > 0:
                 # Si le patient a déjà une consultation, afficher un message d'erreur
-                mb.showerror("Erreur", "Ce patient a déjà une consultation pour cette date.")
+                mb.showerror("Erreur", "Ce patient a déjà une consultation pour cette date.", parent=self.master)
                 conn.close()
                 return  
 
