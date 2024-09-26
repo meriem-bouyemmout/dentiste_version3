@@ -9,7 +9,7 @@ import fdb
 import babel.numbers  # Assure-toi d'utiliser le bon module pour accéder à ta base de données
 
 class Consultation:
-    def __init__(self, mast):
+    def __init__(self, mast, user):
         self.master = mast
         self.master.title("Gestion des Consultations")
         ctk.set_appearance_mode("light")  # Modes: system (default), light, dark
@@ -19,6 +19,8 @@ class Consultation:
         self.height = self.master.winfo_screenheight()
         self.master.geometry("{w}x{h}+0+0".format(w=self.width,h=self.height))
         self.master.state("zoomed")
+
+        self.user = user
         
         # Variables pour calcul automatique
         self.operations = []
@@ -134,18 +136,30 @@ class Consultation:
             "Consultation": 1000,
             "Extraction": 2000,
             "Extraction Adulte": 5000,
+            "Extraction DDS" : 5000,
             "Extraction Adulte Difficile": 5000,
             "Extraction Dent Temporaire": 1500,
             "Détartrage": 6000,
             "Blanchiment": 3500,
-            "Prothèse Partielle Flexible": 30000,
-            "Prothèse Partielle Désinée": 25000,
-            "Prothèse Flexible Haut": 30000,
-            "Prothèse Flexible Bas": 30000,
-            "Prothèse Désinée Haut": 25000,
-            "Prothèse Désinée Bas": 25000,
-            "Prothèse Composite Haut": 30000,
-            "Prothèse Composite Bas": 30000,
+            "Traitement radiculaire pluriradiculaire": 8000,
+            "Traitement canalaire": 7000,
+            "Gouttière": 6000,
+            "Alvéolite": 4000,
+            "Réparation de facette": 4000,
+            "Scellement de bridge": 3000, 
+            "Prothèse Partielle Flexible Haut": 30000,
+            "Prothèse Partielle Flexible Bas": 30000,
+            "Prothèse Partielle Résinée Dent Résinée Haut": 25000,
+            "Prothèse Partielle Résinée Dent Résinée Bas": 25000,
+            "Prothèse Partielle Résinée Dent Composite Haut": 30000,
+            "Prothèse Partielle Résinée Dent Composite Bas": 30000,
+            "Prothèse Totale Simple Haut": 25000,
+            "Prothèse Totale Simple Bas": 25000,
+            "Prothèse Totale Piezographie Haut": 30000,
+            "Prothèse Totale Piezographie Bas": 30000,
+            "Soutien Composite Dent Antérieure": 0,
+            "Soutien Composite Dent Postérieure": 0,
+            "Prothèses Fixes" : 0,
             "Autre": 0
         }
    
@@ -216,11 +230,17 @@ class Consultation:
         if operation == "Autre" :
             self.manual_entry_window()
         else:
-            if operation :    
-                prix = self.prix_operations[operation]
-                self.table_operations.insert("", "end", values=(operation, prix))
-                self.operations.append((operation, prix))
-                self.update_total()
+            if operation == "Soutien Composite Dent Antérieure" or operation == "Soutien Composite Dent Postérieure" :
+                self.modele_dentaire(operation)
+            else:
+                if operation == "Prothèses Fixes" :
+                    self.prothse_fixi()
+                else:    
+                    if operation :    
+                        prix = self.prix_operations[operation]
+                        self.table_operations.insert("", "end", values=(operation, prix))
+                        self.operations.append((operation, prix))
+                        self.update_total()
 
     def manual_entry_window(self):
         # Créer une nouvelle fenêtre
@@ -240,14 +260,150 @@ class Consultation:
         manual_price.pack(pady=10)
 
         # Bouton pour soumettre les données
-        submit_button = Button(manual_window, text="Soumettre", command=lambda: self.submit(manual_operation.get(), manual_price.get()), bg="#4CAF50", fg="white", font="Arial")
+        submit_button = Button(manual_window, text="Soumettre", command=lambda: self.submit(manual_operation.get(), manual_price.get()), bg="lightblue", fg="white", font="Arial")
         submit_button.pack(pady=15)
         submit_button.config(width=20)
 
-    def submit(self,operation, price):
+    def submit(self,operation, prix):
         # Traiter les données soumises
-        print(f"Opération: {operation}, Prix: {price}")     
+        prix = float(prix)
+        self.operations.append((operation, prix))
+        self.table_operations.insert("", "end", values=(operation, prix))            
+        self.update_total()
 
+    def modele_dentaire(self, operation):
+        # Créer la fenêtre principale
+        def show_tooth_number(operation,tooth_number):
+            operation = f"{operation} {tooth_number}"
+            prix = "5000"
+            prix = float(prix)
+            self.operations.append((operation, prix))
+            self.table_operations.insert("", "end", values=(operation, prix))            
+            self.update_total()
+
+        root = Toplevel(self.master)
+        root.title("Modèle d'anatomie dentaire")
+        root.resizable(False, False)
+
+        # Charger l'image du schéma dentaire
+        image_path = "images/dents-machoire-superieure-inferieure-pour-clinique-dentaire_268834-147.png"  # Remplacer avec le chemin vers l'image
+        image = Image.open(image_path)
+        image = image.resize((600, 600))  # Ajuster la taille de l'image si nécessaire
+        self.photo = ImageTk.PhotoImage(image)
+
+
+
+        # Créer un canevas pour afficher l'image
+        canvas = tk.Canvas(root, width=600, height=600)
+        canvas.pack()
+
+        # Afficher l'image sur le canevas
+        canvas.create_image(0, 0, anchor=tk.NW, image=self.photo)
+
+        # Positions des boutons (tu devras ajuster les coordonnées en fonction de l'image)
+        teeth_positions = {
+            # HAUT
+            1: (155, 255),
+            2: (160, 217),
+            3: (170, 175),
+            4: (180, 140),
+            5: (190, 110),
+            6: (210, 80),
+            7: (235, 60),
+            8: (270, 55),
+            9: (310, 55),
+            10:(345, 60),
+            11:(370, 80),
+            12:(385, 110),
+            13:(400, 140),
+            14:(410, 175),
+            15:(420, 217),
+            16:(425, 255),
+            # BAS
+            32:(165, 345),
+            31:(170, 385),
+            30:(175, 425),
+            29:(190, 455),
+            28:(200, 485),
+            27:(225, 510),
+            26:(250, 525),
+            25:(275, 535),
+            24:(305, 535),
+            23:(330, 525),
+            22:(357, 510),
+            21:(380, 485),
+            20:(390, 455),
+            19:(407, 425),
+            18:(412, 385),
+            17:(417, 345)
+            
+        }
+
+        # Créer des boutons pour chaque dent
+        for self.tooth_number, (x, y) in teeth_positions.items():
+            button = tk.Button(root, text=f"{self.tooth_number}", command=lambda t=self.tooth_number: show_tooth_number(operation,t))
+            # Positionner chaque bouton au-dessus de la dent
+            button.place(x=x, y=y, width=20, height=20)
+
+
+    def prothse_fixi(self):
+        protheses_fixees = {
+            "résine": 10000,
+            "céramique": 20000,
+            "zircone": 40000
+        }
+            
+        toplevel = tk.Toplevel(self.master)
+        toplevel.title("Gestion des Prothèses Fixes")
+
+        label_prothese = tk.Label(toplevel, text="Type de prothèse:")
+        label_prothese.pack()
+
+        combobox_prothese = ttk.Combobox(toplevel, values=list(protheses_fixees.keys()))
+        combobox_prothese.pack()
+
+        label_nombre = tk.Label(toplevel, text="Nombre d'éléments:")
+        label_nombre.pack()
+
+        entry_nombre = tk.Entry(toplevel)
+        entry_nombre.pack()
+
+        label_total = tk.Label(toplevel, text="Coût total: 0 DA")
+        label_total.pack()
+
+        total = 0  # Coût total
+
+        def ajouter_prothese():
+            nonlocal total  # Permet d'utiliser la variable totale définie dans la fonction englobante
+            type_prothese = combobox_prothese.get().strip().lower()
+            try:
+                nombre_elements = int(entry_nombre.get())
+                if type_prothese in protheses_fixees:
+                    # Calculer le coût et mettre à jour le total
+                    cout = protheses_fixees[type_prothese] * nombre_elements
+                    total += cout
+
+                    # Afficher le coût total
+                    operation = f"{type_prothese} de {nombre_elements} elements"
+                    prix = float(total)
+
+                    self.operations.append((operation, prix))
+                    self.table_operations.insert("", "end", values=(operation, prix))            
+                    self.update_total() 
+
+
+
+                    # Réinitialiser les champs
+                    combobox_prothese.delete(0, tk.END)
+                    entry_nombre.delete(0, tk.END)
+                else:
+                    mb.showerror("Erreur", "Type de prothèse invalide.", parent=self.master)
+            except ValueError:
+                mb.showerror("Erreur", "Veuillez entrer un nombre valide d'éléments.", parent=self.master)
+
+        bouton_ajouter = tk.Button(toplevel, text="Ajouter Prothèse", command=ajouter_prothese)
+        bouton_ajouter.pack()
+    
 
     def delete_operation(self):
         # Supprime l'opération sélectionnée et met à jour le total
@@ -273,7 +429,7 @@ class Consultation:
 
     def update_total(self):
         # Met à jour le montant total en fonction des opérations ajoutées
-        total = sum(prix for _, prix in self.operations)
+        total = sum(float(prix) for _, prix in self.operations)
         self.total.set(total)
         self.update_reste()
 
@@ -308,7 +464,7 @@ class Consultation:
 
             # 1. Insertion dans la table CONSULTATION
             id_patient = self.entry_id_patient.get()
-            id_dentiste = 1  # Par exemple, tu peux définir l'ID du dentiste
+            id_dentiste = self.user  # Par exemple, tu peux définir l'ID du dentiste
             jour = self.date_entry.get_date()
             
 
@@ -354,6 +510,11 @@ class Consultation:
                 INSERT INTO PAYEMENT (ID_CONSULTATION, MONTANT_TOTAL, VERSEMENT, RESTE)
                 VALUES (?, ?, ?, ?)
             """, (id_consultation, montant_total, versement, reste))
+
+            cursor.execute("""
+                INSERT INTO SEANCE (ID_CONSULTATION, NUM_SEANCE, DATE_SEANCE)
+                VALUES (?, ?, ?)
+            """, (id_consultation, 1, jour))
 
             # Commit des transactions
             conn.commit()

@@ -116,7 +116,7 @@ class Login :
                 self.master.destroy()  
                 win = ctk.CTk()
                 win.iconbitmap('images\\download.ico')
-                uni = Ac.Accueil(win, autorisation)
+                uni = Ac.Accueil(win, user)
                 self.username.delete(0,'end')
                 self.password.delete(0,'end')
                 conn.close()

@@ -9,10 +9,12 @@ import List_Patients as pt
 import List_Jour as lj
 import Consultation as cn
 import Liste_consulation as ls
+import List_des_impyees as li
+import Seance_payement as sp
 from tkinter import filedialog
 
 class Accueil:
-    def __init__(self, mast):
+    def __init__(self, mast, user):
         self.master = mast
         self.master.title("Accueil")
         ctk.set_appearance_mode("light")  # Modes: system (default), light, dark
@@ -22,7 +24,7 @@ class Accueil:
         self.master.geometry("{w}x{h}+0+0".format(w=self.width, h=self.height))
         self.master.state("zoomed")
         
-        # self.autorisation = autorisation
+        self.user = user
         ####################################################################################################
         
         self.frametop = ctk.CTkFrame(self.master, fg_color="#BCD2EE", height=200)
@@ -86,7 +88,7 @@ class Accueil:
         self.buttonHistorique = ctk.CTkButton(self.framebody, text='Règlement', command=self.historique, image=photo_image_list_des_reglement, compound="top", height=35, width=200, font=('Helvetica', 18), cursor='cross')
         self.buttonHistorique.grid(row=1, column=0,columnspan=2, padx=5, pady=5)
 
-        self.buttonHistorique = ctk.CTkButton(self.framebody, text='Liste des impayées', command=self.historique,image=photo_image_list_des_impayees, compound="top", height=35, width=200, font=('Helvetica', 18), cursor='cross')
+        self.buttonHistorique = ctk.CTkButton(self.framebody, text='Liste des impayées', command=self.historique_impayee,image=photo_image_list_des_impayees, compound="top", height=35, width=200, font=('Helvetica', 18), cursor='cross')
         self.buttonHistorique.grid(row=1, column=1,padx=5,columnspan=2, pady=5)
 
         # Réglage pour que les colonnes et lignes remplissent l'espace
@@ -106,19 +108,24 @@ class Accueil:
     def jour(self):
         win = Toplevel()
         win.iconbitmap('images\\download.ico')
-        uni = lj.List_Jour(win)      
+        uni = lj.List_Jour(win, self.user)      
 
     # Fonction pour gérer le clic sur le bouton "Consultations"
     def consultation(self):
         win = Toplevel()
         win.iconbitmap('images\\download.ico')
-        uni = cn.Consultation(win)
+        uni = cn.Consultation(win, self.user)
 
     # Fonction pour gérer le clic sur le bouton "Historique Consultations"
     def historique(self):
         win = Toplevel()
         win.iconbitmap('images\\download.ico')
-        uni = ls.List_consultation(win)
+        uni = sp.Seance_payement(win, self.user)
+
+    def historique_impayee(self):
+        win = Toplevel()
+        win.iconbitmap('images\\download.ico')
+        uni = li.List_Impayee(win)    
     
 
 

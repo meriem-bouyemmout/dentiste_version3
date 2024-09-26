@@ -7,9 +7,9 @@ from tkinter import messagebox
 from PIL import Image, ImageTk
 
 class List_consultation:
-    def __init__(self, mast):
+    def __init__(self, mast, user):
         self.master = mast
-        self.master.title("Gestion des Consultations")
+        self.master.title("Payement")
         ctk.set_appearance_mode("light")  # Modes: system (default), light, dark
         ctk.set_default_color_theme("blue")
         self.master.configure(bg="white")  # Exemple pour un fond blanc
@@ -17,6 +17,8 @@ class List_consultation:
         self.height = self.master.winfo_screenheight()
         self.master.geometry("{w}x{h}+0+0".format(w=self.width,h=self.height))
         self.master.state("zoomed")
+
+        self.user = user
 
         # Section Patient
         frame_patient = ctk.CTkFrame(self.master, fg_color="#BCD2EE")
@@ -73,8 +75,11 @@ class List_consultation:
         self.image = self.image.resize((200, 200))  # Redimensionner l'image selon les besoins
         self.photo_image = ImageTk.PhotoImage(self.image)
 
+        # Utiliser CTkImage à la place de PhotoImage
+        self.ctk_image = ctk.CTkImage(light_image=self.image, dark_image=self.image, size=(200, 200))
+
         # Créer un label pour afficher l'image
-        self.img_label = Label(self.master, image=self.photo_image, bg="white")
+        self.img_label = ctk.CTkLabel(self.master, image=self.ctk_image, text="", bg_color="white")
         self.img_label.place(relx=1.0, rely=1.0, anchor="se", x=-10, y=-10)
 
     def search_consultations(self):
@@ -107,14 +112,16 @@ class List_consultation:
             )
             cursor = conn.cursor()
 
+            val = [patient_id, self.user]
+
             cursor.execute("""
                 SELECT C.JOUR, LIST(D.OPERATION, ', ') AS operations, P.MONTANT_TOTAL, P.VERSEMENT, P.RESTE
                 FROM CONSULTATION C
                 JOIN DETAILLE_CONSULTATION D ON C.ID_CONSULTATION = D.ID_CONSULTATION
                 JOIN PAYEMENT P ON C.ID_CONSULTATION = P.ID_CONSULTATION
-                WHERE C.ID_PATIENT = ?
+                WHERE C.ID_PATIENT = ? AND C.ID_DENTISTE = ?
                 GROUP BY C.JOUR, P.MONTANT_TOTAL, P.VERSEMENT, P.RESTE
-            """, (patient_id,))
+            """, val)
 
             # Récupérer toutes les consultations
             consultations = cursor.fetchall()

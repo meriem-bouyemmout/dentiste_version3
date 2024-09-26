@@ -7,7 +7,7 @@ import tkinter.messagebox as mb
 import babel.numbers
 
 class List_Jour:
-    def __init__(self, mast):
+    def __init__(self, mast, user):
         self.master = mast
         self.master.title("Les rendez-vous")
         ctk.set_appearance_mode("light")  # Modes: system (default), light, dark
@@ -17,6 +17,8 @@ class List_Jour:
         self.height = self.master.winfo_screenheight()
         self.master.geometry("{w}x{h}+0+0".format(w=self.width,h=self.height))
         self.master.state("zoomed")
+
+        self.user = user
 
         self.frame_rdv = ctk.CTkFrame(self.master, fg_color ="white", width=400, height=400)
         self.frame_rdv.grid(row=0, column=0, padx=20, pady=20)
@@ -198,10 +200,10 @@ class List_Jour:
             SELECT PATIENT.ID, PATIENT.NOM, PATIENT.PRENOM, PATIENT.NUM_TEL, RENDEZ_VOUS.ETAT
             FROM PATIENT
             JOIN RENDEZ_VOUS ON RENDEZ_VOUS.ID_PATIENT = PATIENT.ID
-            WHERE RENDEZ_VOUS.JOUR = ?
+            WHERE RENDEZ_VOUS.JOUR = ? AND RENDEZ_VOUS.ID_DENTISTE = ?
         """
-
-        cursor.execute(query, (jour,))
+        val = [jour, self.user]
+        cursor.execute(query, val)
         resultats = cursor.fetchall()
 
         # Effacer les anciennes données dans le tableau
@@ -269,7 +271,7 @@ class List_Jour:
             self.combo_id.set("")
 
             # Ajouter le rendez-vous à la base de données
-            val = (patient_id, 1, etat, jour)
+            val = (patient_id, self.user, etat, jour)
             req = "INSERT INTO RENDEZ_VOUS (ID_PATIENT, ID_DENTISTE, ETAT, JOUR) VALUES (?, ?, ?, ?)"
             cursor.execute(req, val)
             conn.commit()

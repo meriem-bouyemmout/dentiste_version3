@@ -336,7 +336,7 @@ class List_Patients:
 
             # Message de succès avec l'ID du patient
             mb.showinfo('Succès', f'Données insérées. ID du patient : {patient_id}', parent=self.master)
-            self.imprimer_informations_patient(patient_id)
+            # self.imprimer_informations_patient(patient_id)
 
             self.lire()
             self.netoyer()
