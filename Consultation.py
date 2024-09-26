@@ -359,7 +359,7 @@ class Consultation:
         label_prothese = tk.Label(toplevel, text="Type de prothèse:")
         label_prothese.pack()
 
-        combobox_prothese = ttk.Combobox(toplevel, values=list(protheses_fixees.keys()))
+        combobox_prothese = ttk.Combobox(toplevel, values=list(protheses_fixees.keys()), state="readonly")
         combobox_prothese.pack()
 
         label_nombre = tk.Label(toplevel, text="Nombre d'éléments:")
@@ -368,24 +368,21 @@ class Consultation:
         entry_nombre = tk.Entry(toplevel)
         entry_nombre.pack()
 
-        label_total = tk.Label(toplevel, text="Coût total: 0 DA")
-        label_total.pack()
-
-        total = 0  # Coût total
+        
 
         def ajouter_prothese():
-            nonlocal total  # Permet d'utiliser la variable totale définie dans la fonction englobante
+        # Permet d'utiliser la variable totale définie dans la fonction englobante
             type_prothese = combobox_prothese.get().strip().lower()
             try:
                 nombre_elements = int(entry_nombre.get())
                 if type_prothese in protheses_fixees:
                     # Calculer le coût et mettre à jour le total
                     cout = protheses_fixees[type_prothese] * nombre_elements
-                    total += cout
+                    
 
                     # Afficher le coût total
                     operation = f"{type_prothese} de {nombre_elements} elements"
-                    prix = float(total)
+                    prix = float(cout)
 
                     self.operations.append((operation, prix))
                     self.table_operations.insert("", "end", values=(operation, prix))            

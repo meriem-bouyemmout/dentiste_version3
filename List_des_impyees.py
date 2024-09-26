@@ -91,7 +91,7 @@ class List_Impayee:
             )
             
             # Afficher les informations dans une boîte de dialogue
-            messagebox.showinfo("Informations du Patient", info_message)
+            messagebox.showinfo("Informations du Patient", info_message, parent=self.master)
         
 
     def read(self):

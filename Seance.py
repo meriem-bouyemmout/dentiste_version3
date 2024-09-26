@@ -86,9 +86,9 @@ class Seance:
         self.img_label.place(relx=1.0, rely=1.0, anchor="se", x=-10, y=-10)
 
     def list_consultations(self):
-        patient_id = self.entry_id_patient.get()
+        self.patient_id = self.entry_id_patient.get()
 
-        if not patient_id:
+        if not self.patient_id:
             messagebox.showerror("Erreur", "Veuillez entrer l'ID du patient.", parent=self.master)
             return
 
@@ -113,7 +113,7 @@ class Seance:
                 fb_library_name=fbclient_path
             )
             cursor = conn.cursor()
-            val = [patient_id, self.user]
+            val = [self.patient_id, self.user]
             # Requête pour obtenir les consultations du patient
             cursor.execute(""" 
                         SELECT 
@@ -141,7 +141,7 @@ class Seance:
 
             # Remplir la table avec les consultations récupérées
             for consultation in cursor.fetchall():
-                self.consultation_id = consultation[0]
+                consultation_id = consultation[0]
                 date_seance = consultation[1]
                 operation = consultation[2]
                 num_de_seance = consultation[3]
@@ -154,11 +154,51 @@ class Seance:
 
     def on_item_selected(self, event):
         # Récupérer l'élément sélectionné
+
         selected_item = self.table_historique.selection()
         if selected_item:
             # Récupérer l'opération de l'élément sélectionné
+            date_seance_old = self.table_historique.item(selected_item, 'values')[0]
             operation_name = self.table_historique.item(selected_item, 'values')[1]
+            current_session_number = int(self.table_historique.item(selected_item, 'values')[2])
+
             date_seance = self.entry_date_seance.get_date()
+
+            def read_database_path(file_path='data_base.txt'):
+                with open(file_path, 'r') as file:
+                    return file.read().strip()
+
+            def read_fbclient_path(file_path='fb_client.txt'):
+                with open(file_path, 'r') as file:
+                    return file.read().strip()
+
+            database_path = read_database_path()
+            fbclient_path = read_fbclient_path()
+
+            conn = fdb.connect(
+                dsn=database_path,
+                user='SYSDBA',
+                password='1234',
+                charset='UTF8',
+                fb_library_name=fbclient_path
+            )
+            cursor = conn.cursor()
+            req = """SELECT S.ID_CONSULTATION
+              FROM SEANCE S
+              JOIN 
+              CONSULTATION C ON S.ID_CONSULTATION = C.ID_CONSULTATION
+              WHERE  
+              C.ID_PATIENT = ? AND S.DATE_SEANCE = ? AND S.NUM_SEANCE = ?"""
+            val = [self.patient_id, date_seance_old, current_session_number]
+
+            cursor.execute(req,val)
+
+            result = cursor.fetchone()
+            consultation_id = result[0]
+            
+
+
+
 
             if not date_seance:
                 messagebox.showerror("Erreur", "Veuillez saisir une date de séance.", parent=self.master)
@@ -167,7 +207,7 @@ class Seance:
             # Incrémente le numéro de séance
             # Convertir la valeur du numéro de séance en entier avant d'incrémenter
             try:
-                current_session_number = int(self.table_historique.item(selected_item, 'values')[2])
+                current_session_number
             except ValueError:
                 # Si la conversion échoue, on initialise à 0
                 current_session_number = 0
@@ -175,7 +215,7 @@ class Seance:
             session_number = current_session_number + 1
 
             # Ajout d'une nouvelle séance dans la base de données
-            self.add_seance(self.consultation_id,  date_seance, session_number, operation_name)
+            self.add_seance(consultation_id,  date_seance, session_number, operation_name)
 
             
 
@@ -202,6 +242,18 @@ class Seance:
             fb_library_name=fbclient_path
         )
         cursor = conn.cursor()
+        # Vérification si une séance existe déjà pour le même jour et la même consultation
+        cursor.execute("""
+            SELECT COUNT(*) FROM SEANCE WHERE ID_CONSULTATION = ? AND DATE_SEANCE = ?
+        """, (consultation_id, date_seance))
+
+        result = cursor.fetchone()
+
+        if result[0] > 0:
+            # Si une séance existe déjà pour cette consultation à la même date, afficher un message d'erreur
+            messagebox.showerror("Erreur", f"Une séance existe déjà pour cette consultation à la date {date_seance}.", parent=self.master)
+            conn.close()
+            return False
         # Vérification si la séance existe déjà
         cursor.execute("""
             SELECT COUNT(*) FROM SEANCE WHERE ID_CONSULTATION = ? AND NUM_SEANCE = ?

@@ -36,9 +36,9 @@ class List_Jour:
         self.label_id.grid(row=2, column=0, padx=10, pady=10)
 
         # Combobox pour sélectionner l'ID du patient
-        self.combo_id = ttk.Combobox(self.frame_rdv, values=self.get_patient_ids(), state="readonly")
-        self.combo_id.grid(row=2, column=1, padx=10, pady=10)
-        self.combo_id.bind("<<ComboboxSelected>>", self.afficher_patient)
+        self.entry_id = ctk.CTkEntry(self.frame_rdv)
+        self.entry_id.grid(row=2, column=1, padx=10, pady=10)
+        self.entry_id.bind("<Return>", self.afficher_patient)
 
         # Labels pour afficher les informations du patient
         self.label_nom = ctk.CTkLabel(self.frame_rdv, text="Nom :",font=('Helvetica',15))
@@ -132,7 +132,7 @@ class List_Jour:
     
     def afficher_patient(self, event):
         """ Récupère les informations du patient et les affiche """
-        patient_id = self.combo_id.get()
+        patient_id = self.entry_id.get()
         # Connexion à la base de données Firebird
 
         def read_database_path(file_path='data_base.txt'):
@@ -159,11 +159,14 @@ class List_Jour:
         cursor.execute("SELECT NOM, PRENOM, NUM_TEL FROM Patient WHERE ID = ?", (patient_id,))
         patient_data = cursor.fetchone()
 
-        if patient_data:
-            # Afficher les informations dans les labels
-            self.nom_value.configure(text=patient_data[0])
-            self.prenom_value.configure(text=patient_data[1])
-            self.tel_value.configure(text=patient_data[2])
+        if not patient_data:
+            mb.showerror('Erreur', "Le patient n'exitse pas ", parent=self.master)
+        else:
+            if patient_data :    
+                # Afficher les informations dans les labels
+                self.nom_value.configure(text=patient_data[0])
+                self.prenom_value.configure(text=patient_data[1])
+                self.tel_value.configure(text=patient_data[2])
 
 
 
@@ -221,7 +224,7 @@ class List_Jour:
     def ajouter_patient(self):
 
         jour = self.entry_date.get()
-        patient_id = self.combo_id.get()
+        patient_id = self.entry_id.get()
         etat = "Non"
 
         def read_database_path(file_path='data_base.txt'):
@@ -268,7 +271,7 @@ class List_Jour:
             self.validation_status[item_id] = False
 
             # Réinitialiser le champ ID
-            self.combo_id.set("")
+            self.entry_id.delete(0, ctk.END)
 
             # Ajouter le rendez-vous à la base de données
             val = (patient_id, self.user, etat, jour)
