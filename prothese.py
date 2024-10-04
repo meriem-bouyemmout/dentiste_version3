@@ -1,101 +1,78 @@
+from tkinter import *
+from tkinter import messagebox
+from PIL import Image, ImageTk
 import tkinter as tk
-from tkinter import ttk
 
-def update_options(*args):
-    prothese_type = prothese_combobox.get()
-    if prothese_type == "Partielle":
-        sous_options = ["Flexible", "Résine"]
-    elif prothese_type == "Totale":
-        sous_options = ["Simple", "Piezographie"]
-    else:
-        sous_options = []
-    
-    sous_combobox['values'] = sous_options
-    sous_combobox.current(0) if sous_options else sous_combobox.set("")
-    prix_label.config(text="")  # Réinitialise le prix à chaque changement
 
-def update_sub_options(*args):
-    sous_option = sous_combobox.get()
-    if sous_option == "Flexible":
-        choix_combobox['values'] = ["Haut (30 000)", "Bas (30 000)"]
-    elif sous_option == "Résine":
-        choix_combobox['values'] = ["Dent résine", "Dent composite"]
-    else:
-        choix_combobox['values'] = []
-    
-    choix_combobox.current(0) if choix_combobox['values'] else choix_combobox.set("")
-    prix_label.config(text="")  # Réinitialise le prix à chaque changement
+class MyWindow:
+    def __init__(self, mast):
+        self.mast = mast
+        self.mast.title("Fenêtre principale")
+        self.mast.geometry("10x10")
+        self.modele_dentaire()
 
-def update_resin_options(*args):
-    resin_option = choix_combobox.get()
-    if resin_option == "Dent résine":
-        resin_combobox['values'] = ["Haut (25 000)", "Bas (25 000)"]
-    elif resin_option == "Dent composite":
-        resin_combobox['values'] = ["Haut (30 000)", "Bas (30 000)"]
-    else:
-        resin_combobox['values'] = []
-    
-    resin_combobox.current(0) if resin_combobox['values'] else resin_combobox.set("")
-    prix_label.config(text="")  # Réinitialise le prix à chaque changement
+    def modele_dentaire(self):
+        # Créer la fenêtre principale
+        def show_tooth_number(tooth_number):
+            messagebox.showinfo("THOOTH",f"you put on {tooth_number}")
 
-def update_prix(*args):
-    prothese_type = prothese_combobox.get()
-    sous_option = sous_combobox.get()
-    choix = choix_combobox.get()
-    resin = resin_combobox.get()
+        root = tk.Toplevel(self.mast)
+        root.title("Modèle d'anatomie dentaire")
+        root.resizable(False, False)
 
-    if choix == "Haut (30 000)" or choix == "Bas (30 000)":
-        prix_label.config(text="Prix : 30 000")
-    elif resin == "Haut (25 000)" or resin == "Bas (25 000)":
-        prix_label.config(text="Prix : 25 000")
-    elif resin == "Haut (30 000)" or resin == "Bas (30 000)":
-        prix_label.config(text="Prix : 30 000")
-    elif sous_option == "Simple":
-        prix_label.config(text="Prix : 50 000")
-    elif sous_option == "Piezographie":
-        prix_label.config(text="Prix : 60 000")
-    else:
-        prix_label.config(text="")
+        # Charger l'image du schéma dentaire
+        image_path = "images/42484894-les-dents-primaires-modèle-de-la-bouche-avec-des-enfants-mâchoire-supérieure-et-inférieure-et-ses.jpg"  # Remplacer avec le chemin vers l'image
+        image = Image.open(image_path)
+        image = image.resize((400, 600))  # Ajuster la taille de l'image si nécessaire
+        self.photo = ImageTk.PhotoImage(image)
 
-# Création de la fenêtre principale
+
+
+        # Créer un canevas pour afficher l'image
+        canvas = tk.Canvas(root, width=400, height=600)
+        canvas.pack()
+
+        # Afficher l'image sur le canevas
+        canvas.create_image(0, 0, anchor=tk.NW, image=self.photo)
+
+        # Positions des boutons (tu devras ajuster les coordonnées en fonction de l'image)
+        teeth_positions = {
+            # HAUT
+            
+            4: (80, 245),
+            5: (90, 200),
+            6: (110,170),
+            7: (135,145),
+            8: (170,130),
+            9: (210,130),
+            10:(245,145),
+            11:(270,170),
+            12:(285,200),
+            13:(300,245),
+            
+            # BAS
+            
+            29:(80, 355),
+            28:(95, 395),
+            27:(115,435),
+            26:(145,460),
+            25:(175,470),
+            24:(205,470),
+            23:(235,460),
+            22:(265,435),
+            21:(285,395),
+            20:(300,355),
+            
+            
+        }
+
+        # Créer des boutons pour chaque dent
+        for self.tooth_number, (x, y) in teeth_positions.items():
+            button = tk.Button(root, text=f"{self.tooth_number}", command=lambda t=self.tooth_number: show_tooth_number(t))
+            # Positionner chaque bouton au-dessus de la dent
+            button.place(x=x, y=y, width=20, height=20)
+
+# Créer et exécuter l'application
 root = tk.Tk()
-root.title("Choix de la Prothèse")
-
-# Label pour le type de prothèse
-tk.Label(root, text="Prothèse Amovible :").grid(row=0, column=0)
-
-# Menu déroulant pour le type de prothèse
-prothese_combobox = ttk.Combobox(root, values=["Partielle", "Totale"])
-prothese_combobox.grid(row=0, column=1)
-prothese_combobox.bind("<<ComboboxSelected>>", update_options)
-
-# Label pour sous-options
-tk.Label(root, text="Type de Partielle / Totale :").grid(row=1, column=0)
-
-# Menu déroulant pour les sous-options
-sous_combobox = ttk.Combobox(root)
-sous_combobox.grid(row=1, column=1)
-sous_combobox.bind("<<ComboboxSelected>>", update_sub_options)
-
-# Label pour les choix spécifiques
-tk.Label(root, text="Choix Flexible / Résine :").grid(row=2, column=0)
-
-# Menu déroulant pour les choix spécifiques
-choix_combobox = ttk.Combobox(root)
-choix_combobox.grid(row=2, column=1)
-choix_combobox.bind("<<ComboboxSelected>>", update_resin_options)
-
-# Label pour les options résine (Haut / Bas)
-tk.Label(root, text="Options pour Résine :").grid(row=3, column=0)
-
-# Menu déroulant pour les options résine
-resin_combobox = ttk.Combobox(root)
-resin_combobox.grid(row=3, column=1)
-resin_combobox.bind("<<ComboboxSelected>>", update_prix)
-
-# Label pour afficher le prix
-prix_label = tk.Label(root, text="Prix : ")
-prix_label.grid(row=4, column=1)
-
-# Lancer la boucle principale
+app = MyWindow(root)
 root.mainloop()

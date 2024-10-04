@@ -74,7 +74,7 @@ class Seance_payement:
     def jour(self):
         win = Toplevel()
         win.iconbitmap('images\\download.ico')
-        uni = ls.List_consultation(win, self.user)      
+        uni = ls.List_consultation(win)      
 
         
 

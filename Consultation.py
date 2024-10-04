@@ -9,7 +9,7 @@ import fdb
 import babel.numbers  # Assure-toi d'utiliser le bon module pour accéder à ta base de données
 
 class Consultation:
-    def __init__(self, mast, user):
+    def __init__(self, mast):
         self.master = mast
         self.master.title("Gestion des Consultations")
         ctk.set_appearance_mode("light")  # Modes: system (default), light, dark
@@ -20,10 +20,12 @@ class Consultation:
         self.master.geometry("{w}x{h}+0+0".format(w=self.width,h=self.height))
         self.master.state("zoomed")
 
-        self.user = user
+        self.user = 1
         
         # Variables pour calcul automatique
         self.operations = []
+        self.seances = []
+        self.operations_payement = []
         self.total = tk.DoubleVar(value=0)
         self.versement = tk.DoubleVar(value=0)
         self.reste = tk.DoubleVar(value=0)
@@ -71,12 +73,14 @@ class Consultation:
         label_operations = ctk.CTkLabel(frame_operations, text="Opérations effectuées:", font=("Arial", 15, 'bold'))
         label_operations.grid(row=0, column=0, padx=10, pady=5)
 
-        self.table_operations = ttk.Treeview(frame_operations, columns=("Operation", "Prix"), show='headings')
+        self.table_operations = ttk.Treeview(frame_operations, columns=("Operation", "Prix", "Seance"), show='headings')
         self.table_operations.heading("Operation", text="Opération")
         self.table_operations.heading("Prix", text="Prix")
+        self.table_operations.heading("Seance", text="Séance")
 
         self.table_operations.column("Operation", width=300)
         self.table_operations.column("Prix", width=100)
+        self.table_operations.column("Seance", width=100)
         self.table_operations.grid(row=1, column=0, padx=10, pady=10, columnspan=2)
 
         # Boutons pour ajouter et supprimer des opérations
@@ -138,28 +142,31 @@ class Consultation:
             "Extraction Adulte": 5000,
             "Extraction DDS" : 5000,
             "Extraction Adulte Difficile": 5000,
-            "Extraction Dent Temporaire": 1500,
+            "Extraction Temporaire": 1500,
             "Détartrage": 6000,
             "Blanchiment": 3500,
-            "Traitement radiculaire pluriradiculaire": 8000,
-            "Traitement canalaire": 7000,
+            "Traitement Radiculaire Pluriradiculaire": 8000,
+            "Traitement Canalaire Adulte": 7000,
+            "Traitement Canalaire Temporaire": 7000,
             "Gouttière": 6000,
             "Alvéolite": 4000,
             "Réparation de facette": 4000,
             "Scellement de bridge": 3000, 
-            "Prothèse Partielle Flexible Haut": 30000,
-            "Prothèse Partielle Flexible Bas": 30000,
-            "Prothèse Partielle Résinée Dent Résinée Haut": 25000,
-            "Prothèse Partielle Résinée Dent Résinée Bas": 25000,
-            "Prothèse Partielle Résinée Dent Composite Haut": 30000,
-            "Prothèse Partielle Résinée Dent Composite Bas": 30000,
-            "Prothèse Totale Simple Haut": 25000,
-            "Prothèse Totale Simple Bas": 25000,
-            "Prothèse Totale Piezographie Haut": 30000,
-            "Prothèse Totale Piezographie Bas": 30000,
-            "Soutien Composite Dent Antérieure": 0,
-            "Soutien Composite Dent Postérieure": 0,
+            "Prothèse Amovible Partielle Flexible Haut": 30000,
+            "Prothèse Amovible Partielle Flexible Bas": 30000,
+            "Prothèse Amovible Partielle Résinée Dent Résinée Haut": 25000,
+            "Prothèse Amovible Partielle Résinée Dent Résinée Bas": 25000,
+            "Prothèse Amovible Partielle Résinée Dent Composite Haut": 30000,
+            "Prothèse Amovible Partielle Résinée Dent Composite Bas": 30000,
+            "Prothèse Amovible Totale Simple Haut": 25000,
+            "Prothèse Amovible Totale Simple Bas": 25000,
+            "Prothèse Amovible Totale Piezographie Haut": 30000,
+            "Prothèse Amovible Totale Piezographie Bas": 30000,
             "Prothèses Fixes" : 0,
+            "Soin Composite Dent Antérieure Adulte": 0,
+            "Soin Composite Dent Postérieure Adulte": 0,
+            "Soin Composite Dent Antérieure Temporaire": 0,
+            "Soin Composite Dent Postérieure Temporaire": 0,   
             "Autre": 0
         }
    
@@ -217,30 +224,176 @@ class Consultation:
         label_operation.grid(row=0, column=0, padx=10, pady=5)
 
         # Dropdown pour les opérations fixes
-        self.operation_var = tk.StringVar()
-        operation_menu = tk.OptionMenu(new_window, self.operation_var, *self.prix_operations.keys())
-        operation_menu.grid(row=0, column=1, padx=10, pady=5)
+        # self.operation_var = tk.StringVar()
+        # operation_menu = tk.OptionMenu(new_window, self.operation_var, *self.prix_operations.keys())
+        # operation_menu.grid(row=0, column=1, padx=10, pady=5)
 
-        btn_confirm = tk.Button(new_window, text="Ajouter", command=self.confirm_add_operation)
+        btn_confirm = tk.Button(new_window, text="Ajouter", command=lambda: self.show_menu(new_window))
         btn_confirm.grid(row=1, column=0, columnspan=2, padx=10, pady=5)
 
-    def confirm_add_operation(self):
-        # Ajoute l'opération sélectionnée à la table et met à jour le total
-        operation = self.operation_var.get()
+    def show_menu(self, window):
+        # Créer un menu déroulant
+        menu_operations = Menu(window, tearoff=0)
+        menu_operations.add_command(label="Consultation", command=lambda: self.confirm_add_operation("Consultation")) 
+        menu_recent = Menu(menu_operations, tearoff=0)
+        menu_recent.add_command(label="Adulte", command=lambda: self.confirm_add_operation("Extraction Adulte"))
+        menu_recent.add_command(label="DDS", command=lambda: self.confirm_add_operation("Extraction DDS"))
+        menu_recent.add_command(label="Adulte Difficile", command=lambda: self.confirm_add_operation("Extraction Adulte Difficile"))
+        menu_recent.add_command(label="Temporaire", command=lambda: self.confirm_add_operation("Extraction Temporaire"))
+        menu_operations.add_cascade(label="Extraction", underline=0, menu=menu_recent)
+        menu_operations.add_command(label="Détartrage", command=lambda: self.confirm_add_operation("Détartrage"))
+        menu_operations.add_command(label="Blanchiment", command=lambda: self.confirm_add_operation("Blanchiment"))
+        menu_operations.add_command(label="Traitement Radiculaire Pluriradiculaire", command=lambda: self.confirm_add_operation("Traitement Radiculaire Pluriradiculaire"))
+        menu_recent2 = Menu(menu_operations, tearoff=0)
+        menu_recent2.add_command(label="Adulte", command=lambda: self.confirm_add_operation("Traitement Canalaire Adulte"))
+        menu_recent2.add_command(label="Temporaire", command=lambda: self.confirm_add_operation("Traitement Canalaire Temporaire"))
+        menu_operations.add_cascade(label="Traitement Canalaire", underline=0, menu=menu_recent2)
+        menu_operations.add_command(label="Gouttière", command=lambda: self.confirm_add_operation("Gouttière"))
+        menu_operations.add_command(label="Alvéolite", command=lambda: self.confirm_add_operation("Alvéolite"))
+        menu_operations.add_command(label="Réparation de facette", command=lambda: self.confirm_add_operation("Réparation de facette"))
+        menu_operations.add_command(label="Scellement de bridge", command=lambda: self.confirm_add_operation("Scellement de bridge"))
+        ################################################################################################################
+        menu_recent_petit_petit_petit = Menu(menu_operations, tearoff=0)
+        menu_recent_petit_petit_petit.add_command(label="Haut", command=lambda: self.confirm_add_operation("Prothèse Amovible Partielle Résinée Dent Résinée Haut"))
+        menu_recent_petit_petit_petit.add_command(label="Bas", command=lambda: self.confirm_add_operation("Prothèse Amovible Partielle Résinée Dent Résinée Bas"))
+        menu_recent_petit_petit_petit2 = Menu(menu_operations, tearoff=0)
+        menu_recent_petit_petit_petit2.add_command(label="Haut", command=lambda: self.confirm_add_operation("Prothèse Amovible Partielle Résinée Dent Composite Haut"))
+        menu_recent_petit_petit_petit2.add_command(label="Bas", command=lambda: self.confirm_add_operation("Prothèse Amovible Partielle Résinée Dent Composite Bas"))
+
+        menu_recent_petit_petit = Menu(menu_operations, tearoff=0)
+        menu_recent_petit_petit.add_command(label="Haut", command=lambda: self.confirm_add_operation("Prothèse Amovible Partielle Flexible Haut"))
+        menu_recent_petit_petit.add_command(label="Bas", command=lambda: self.confirm_add_operation("Prothèse Amovible Partielle Flexible Bas"))       
+        menu_recent_petit_petit2 = Menu(menu_operations, tearoff=0)
+        menu_recent_petit_petit2.add_cascade(label="Dent Résinée", underline=0, menu=menu_recent_petit_petit_petit)
+        menu_recent_petit_petit2.add_cascade(label="Dent Composite", underline=0, menu=menu_recent_petit_petit_petit2)
+        menu_recent_petit_petit3 = Menu(menu_operations, tearoff=0)
+        menu_recent_petit_petit3.add_command(label="Haut", command=lambda: self.confirm_add_operation("Prothèse Amovible Totale Simple Haut"))
+        menu_recent_petit_petit3.add_command(label="Bas", command=lambda: self.confirm_add_operation("Prothèse Amovible Totale Simple Bas"))
+        menu_recent_petit_petit4 = Menu(menu_operations, tearoff=0)
+        menu_recent_petit_petit4.add_command(label="Haut", command=lambda: self.confirm_add_operation("Prothèse Amovible Totale Piezographie Haut"))
+        menu_recent_petit_petit4.add_command(label="Bas", command=lambda: self.confirm_add_operation("Prothèse Amovible Totale Piezographie Bas")) 
+
+        menu_recent_petit = Menu(menu_operations, tearoff=0)
+        menu_recent_petit.add_cascade(label="Flexible", underline=0, menu=menu_recent_petit_petit)
+        menu_recent_petit.add_cascade(label="Résinée", underline=0, menu=menu_recent_petit_petit2)
+        menu_recent_petit2 = Menu(menu_operations, tearoff=0)
+        menu_recent_petit2.add_cascade(label="Simple", underline=0, menu=menu_recent_petit_petit3)
+        menu_recent_petit2.add_cascade(label="Piezographie", underline=0, menu=menu_recent_petit_petit4)
+
+        menu_recent3 = Menu(menu_operations, tearoff=0)
+        menu_recent3.add_cascade(label="Partielle", underline=0, menu=menu_recent_petit)
+        menu_recent3.add_cascade(label="Totale",  underline=0, menu=menu_recent_petit2)
+        menu_operations.add_cascade(label="Prothèse Amovible", underline=0, menu=menu_recent3)
+
+        menu_operations.add_command(label="Prothèses Fixes", command=lambda: self.confirm_add_operation("Prothèses Fixes"))
+        ###############################################################################################################################################
+        menu_recent3 = Menu(menu_operations, tearoff=0)
+        menu_recent3.add_command(label="Adulte", command=lambda: self.confirm_add_operation("Soin Composite Dent Antérieure Adulte"))
+        menu_recent3.add_command(label="Temporaire", command=lambda: self.confirm_add_operation("Soin Composite Dent Antérieure Temporaire"))
+        menu_recent4 = Menu(menu_operations, tearoff=0)
+        menu_recent4.add_command(label="Adulte", command=lambda: self.confirm_add_operation("Soin Composite Dent Postérieure Adulte"))
+        menu_recent4.add_command(label="Temporaire", command=lambda: self.confirm_add_operation("Soin Composite Dent Postérieure Temporaire"))
+
+        menu_operations.add_cascade(label="Soin Composite Dent Antérieure", underline=0, menu=menu_recent3)
+        menu_operations.add_cascade(label="Soin Composite Dent Postérieure", underline=0, menu=menu_recent4)
+
+        menu_operations.add_command(label="Autre", command=lambda: self.confirm_add_operation("Autre"))
+
+        # Afficher le menu déroulant à la position actuelle du pointeur de la souris
+        menu_operations.post(window.winfo_pointerx(), window.winfo_pointery())    
+
+    def confirm_add_operation(self, o):
+
+        operation = o
+        ID_patient = self.entry_id_patient.get()
+
+        # Connexion à la base de données Firebird
+        def read_database_path(file_path='data_base.txt'):
+            with open(file_path, 'r') as file:
+                return file.read().strip()
+
+        def read_fbclient_path(file_path='fb_client.txt'):
+            with open(file_path, 'r') as file:
+                return file.read().strip()
+
+        database_path = read_database_path()
+        fbclient_path = read_fbclient_path()
+
+        conn = fdb.connect(
+            dsn=database_path,
+            user='SYSDBA',
+            password='1234',
+            charset='UTF8',
+            fb_library_name=fbclient_path
+        )
+        cursor = conn.cursor()
+
+        val = [operation, ID_patient]
+
+        cursor.execute("""
+            SELECT MAX(S.NUM_SEANCE) FROM SEANCE S
+            JOIN DETAILLE_CONSULTATION D ON S.ID_DETAILLE_CONSULTATION = D.ID_DETAILLE_CONSULTATION
+            JOIN CONSULTATION C ON D.ID_CONSULTATION = C.ID_CONSULTATION
+            JOIN PATIENT P ON C.ID_PATIENT = P.ID
+            WHERE D.OPERATION = ? AND P.ID = ?                                 
+
+        """, val)
+
+        num_seance = cursor.fetchone()[0]
+        print(num_seance)
+        if num_seance is None:
+        # Si aucune séance n'existe encore pour cette consultation, démarrer à 1
+            seance = 1
+        else:
+            # Incrémenter le numéro de séance
+            seance = num_seance + 1
+        
+        
         if operation == "Autre" :
             self.manual_entry_window()
         else:
-            if operation == "Soutien Composite Dent Antérieure" or operation == "Soutien Composite Dent Postérieure" :
+            if operation == "Soin Composite Dent Antérieure Adulte" or operation == "Soin Composite Dent Postérieure Adulte" :
                 self.modele_dentaire(operation)
             else:
                 if operation == "Prothèses Fixes" :
                     self.prothse_fixi()
                 else:    
-                    if operation :    
+                    if operation :
+                            
                         prix = self.prix_operations[operation]
-                        self.table_operations.insert("", "end", values=(operation, prix))
+                        # self.open_seance_window(prix, operation)
+                        self.table_operations.insert("", "end", values=(operation, prix, seance))
                         self.operations.append((operation, prix))
+                        self.seances.append(seance)
+                        if seance == 1:
+                            self.operations_payement.append(prix)
+                        
                         self.update_total()
+
+    def open_seance_window(self, p, o):
+        # Créer une fenêtre Toplevel
+        toplevel = tk.Toplevel()
+        toplevel.title("Saisie Séance")
+        
+        # Texte d'instruction
+        label = ttk.Label(toplevel, text="Sélectionnez le numéro de la séance (1 à 5) :")
+        label.pack(pady=10)
+
+        # Combobox pour la sélection du numéro de séance
+        combobox_seance = ttk.Combobox(toplevel, values=[1, 2, 3, 4, 5], state="readonly")
+        combobox_seance.pack(pady=10)
+
+        # Bouton pour valider la sélection
+        def valider_seance():
+            selected_seance = combobox_seance.get()
+            self.table_operations.insert("", "end", values=(o, p, selected_seance))
+            self.operations.append((o, p))
+            self.update_total()
+
+            toplevel.destroy()
+
+        bouton_valider = ttk.Button(toplevel, text="Valider", command=valider_seance)
+        bouton_valider.pack(pady=10)                    
 
     def manual_entry_window(self):
         # Créer une nouvelle fenêtre
@@ -260,25 +413,73 @@ class Consultation:
         manual_price.pack(pady=10)
 
         # Bouton pour soumettre les données
-        submit_button = Button(manual_window, text="Soumettre", command=lambda: self.submit(manual_operation.get(), manual_price.get()), bg="lightblue", fg="white", font="Arial")
+        submit_button = Button(manual_window, text="Soumettre", command=lambda: self.submit(manual_operation.get(), manual_price.get(), manual_window), bg="lightblue", fg="white", font="Arial")
         submit_button.pack(pady=15)
         submit_button.config(width=20)
 
-    def submit(self,operation, prix):
-        # Traiter les données soumises
+    def submit(self,operation, prix, manual_window):
+        seance = 1
+        manual_window.destroy()
         prix = float(prix)
-        self.operations.append((operation, prix))
-        self.table_operations.insert("", "end", values=(operation, prix))            
+        self.open_seance_window(prix, operation)
+        self.table_operations.insert("", "end", values=(operation, prix, seance))
+        self.operations.append((operation, prix, seance))
         self.update_total()
+        
 
     def modele_dentaire(self, operation):
         # Créer la fenêtre principale
         def show_tooth_number(operation,tooth_number):
-            operation = f"{operation} {tooth_number}"
+            ID_patient = self.entry_id_patient.get()
+            operation = f"{operation} {tooth_number}" 
+
+            # Connexion à la base de données Firebird
+            def read_database_path(file_path='data_base.txt'):
+                with open(file_path, 'r') as file:
+                    return file.read().strip()
+
+            def read_fbclient_path(file_path='fb_client.txt'):
+                with open(file_path, 'r') as file:
+                    return file.read().strip()
+
+            database_path = read_database_path()
+            fbclient_path = read_fbclient_path()
+
+            conn = fdb.connect(
+                dsn=database_path,
+                user='SYSDBA',
+                password='1234',
+                charset='UTF8',
+                fb_library_name=fbclient_path
+            )
+            cursor = conn.cursor()
+
+            val = [operation, ID_patient]
+
+            cursor.execute("""
+                SELECT MAX(S.NUM_SEANCE) FROM SEANCE S
+                JOIN DETAILLE_CONSULTATION D ON S.ID_DETAILLE_CONSULTATION = D.ID_DETAILLE_CONSULTATION
+                JOIN CONSULTATION C ON D.ID_CONSULTATION = C.ID_CONSULTATION
+                JOIN PATIENT P ON C.ID_PATIENT = P.ID
+                WHERE D.OPERATION = ? AND P.ID = ?                                 
+
+            """, val)
+
+            num_seance = cursor.fetchone()[0]
+            if num_seance is None:
+            # Si aucune séance n'existe encore pour cette consultation, démarrer à 1
+                seance = 1
+            else:
+                # Incrémenter le numéro de séance
+                seance = num_seance + 1
+            
             prix = "5000"
             prix = float(prix)
+            self.table_operations.insert("", "end", values=(operation, prix, seance))
             self.operations.append((operation, prix))
-            self.table_operations.insert("", "end", values=(operation, prix))            
+            self.seances.append(seance)
+            if seance == 1:
+                self.operations_payement.append(prix)            
             self.update_total()
 
         root = Toplevel(self.master)
@@ -303,39 +504,39 @@ class Consultation:
         # Positions des boutons (tu devras ajuster les coordonnées en fonction de l'image)
         teeth_positions = {
             # HAUT
-            1: (155, 255),
-            2: (160, 217),
-            3: (170, 175),
-            4: (180, 140),
-            5: (190, 110),
-            6: (210, 80),
-            7: (235, 60),
-            8: (270, 55),
-            9: (310, 55),
-            10:(345, 60),
-            11:(370, 80),
-            12:(385, 110),
-            13:(400, 140),
-            14:(410, 175),
-            15:(420, 217),
-            16:(425, 255),
+            18: (155, 255),
+            17: (160, 217),
+            16: (170, 175),
+            15: (180, 140),
+            14: (190, 110),
+            13: (210, 80),
+            12: (235, 60),
+            11: (270, 55),
+            21: (310, 55),
+            22: (345, 60),
+            23: (370, 80),
+            24: (385, 110),
+            25: (400, 140),
+            26: (410, 175),
+            27: (420, 217),
+            28: (425, 255),
             # BAS
-            32:(165, 345),
-            31:(170, 385),
-            30:(175, 425),
-            29:(190, 455),
-            28:(200, 485),
-            27:(225, 510),
-            26:(250, 525),
-            25:(275, 535),
-            24:(305, 535),
-            23:(330, 525),
-            22:(357, 510),
-            21:(380, 485),
-            20:(390, 455),
-            19:(407, 425),
-            18:(412, 385),
-            17:(417, 345)
+            48: (165, 345),
+            47: (170, 385),
+            46: (175, 425),
+            45: (190, 455),
+            44: (200, 485),
+            43: (225, 510),
+            42: (250, 525),
+            41: (275, 535),
+            31: (305, 535),
+            32: (330, 525),
+            33: (357, 510),
+            34: (380, 485),
+            35: (390, 455),
+            36: (407, 425),
+            37: (412, 385),
+            38: (417, 345)
             
         }
 
@@ -426,7 +627,7 @@ class Consultation:
 
     def update_total(self):
         # Met à jour le montant total en fonction des opérations ajoutées
-        total = sum(float(prix) for _, prix in self.operations)
+        total = sum(float(prix) for prix in self.operations_payement)
         self.total.set(total)
         self.update_reste()
 
@@ -490,13 +691,21 @@ class Consultation:
             # Récupérer l'ID de la consultation nouvellement créée
             cursor.execute("SELECT ID_CONSULTATION FROM CONSULTATION ORDER BY ID_CONSULTATION DESC ROWS 1")
             id_consultation = cursor.fetchone()[0]
-
+            detaille_ids = []
             # 2. Insertion dans la table DETAILLE_CONSULTATION pour chaque opération
             for operation, prix in self.operations:
                 cursor.execute("""
                     INSERT INTO DETAILLE_CONSULTATION (ID_CONSULTATION, OPERATION, PRIX) 
-                    VALUES (?, ?, ?)
+                    VALUES (?, ?, ?) RETURNING ID_DETAILLE_CONSULTATION
                 """, (id_consultation, operation, prix))
+                # Récupérer l'ID_DETAILLE_CONSULTATION retourné par la requête
+                inserted_id = cursor.fetchone()[0]
+                
+                # Ajouter cet ID à la liste
+                detaille_ids.append(inserted_id)
+
+            cursor.execute("SELECT ID_CONSULTATION FROM CONSULTATION ORDER BY ID_CONSULTATION DESC ROWS 1")
+            id_consultation = cursor.fetchone()[0]    
 
             # 3. Insertion dans la table PAYEMENT
             montant_total = self.total.get()
@@ -508,16 +717,32 @@ class Consultation:
                 VALUES (?, ?, ?, ?)
             """, (id_consultation, montant_total, versement, reste))
 
-            cursor.execute("""
-                INSERT INTO SEANCE (ID_CONSULTATION, NUM_SEANCE, DATE_SEANCE)
-                VALUES (?, ?, ?)
-            """, (id_consultation, 1, jour))
+            for  id_detaille_consultation ,seance  in zip(detaille_ids, self.seances) :
+
+                cursor.execute("""
+                    INSERT INTO SEANCE (ID_DETAILLE_CONSULTATION, NUM_SEANCE, DATE_SEANCE)
+                    VALUES (?, ?, ?)
+                """, (id_detaille_consultation, seance, jour))
 
             # Commit des transactions
             conn.commit()
 
             # Confirmation de la validation
             mb.showinfo('Succès',"Consultation valider", parent=self.master)
+
+            self.operations = []
+            self.seances = []
+            self.operations_payement = []
+            
+
+            self.entry_id_patient.delete(0, 'end')
+            self.label_nom.configure(text="")
+            self.label_prenom.configure(text="")
+            self.label_age.configure(text="")
+            self.table_operations.delete(*self.table_operations.get_children())  # Supprime toutes les lignes du tableau
+            self.total.set(0)
+            self.versement.set(0)
+            self.reste.set(0)
 
             # Fermer la connexion
             conn.close()
@@ -526,14 +751,7 @@ class Consultation:
             print(f"Erreur lors de la validation : {e}")
 
         # Nettoyer tous les champs après validation
-        self.entry_id_patient.delete(0, 'end')
-        self.label_nom.configure(text="")
-        self.label_prenom.configure(text="")
-        self.label_age.configure(text="")
-        self.table_operations.delete(*self.table_operations.get_children())  # Supprime toutes les lignes du tableau
-        self.total.set(0)
-        self.versement.set(0)
-        self.reste.set(0)    
+            
 
 
 

@@ -7,7 +7,7 @@ from tkinter import messagebox
 from PIL import Image, ImageTk
 
 class List_consultation:
-    def __init__(self, mast, user):
+    def __init__(self, mast):
         self.master = mast
         self.master.title("Payement")
         ctk.set_appearance_mode("light")  # Modes: system (default), light, dark
@@ -18,7 +18,7 @@ class List_consultation:
         self.master.geometry("{w}x{h}+0+0".format(w=self.width,h=self.height))
         self.master.state("zoomed")
 
-        self.user = user
+        self.user = 1
 
         # Section Patient
         frame_patient = ctk.CTkFrame(self.master, fg_color="#BCD2EE")
