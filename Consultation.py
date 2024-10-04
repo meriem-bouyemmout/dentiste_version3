@@ -307,68 +307,72 @@ class Consultation:
         operation = o
         ID_patient = self.entry_id_patient.get()
 
-        # Connexion à la base de données Firebird
-        def read_database_path(file_path='data_base.txt'):
-            with open(file_path, 'r') as file:
-                return file.read().strip()
-
-        def read_fbclient_path(file_path='fb_client.txt'):
-            with open(file_path, 'r') as file:
-                return file.read().strip()
-
-        database_path = read_database_path()
-        fbclient_path = read_fbclient_path()
-
-        conn = fdb.connect(
-            dsn=database_path,
-            user='SYSDBA',
-            password='1234',
-            charset='UTF8',
-            fb_library_name=fbclient_path
-        )
-        cursor = conn.cursor()
-
-        val = [operation, ID_patient]
-
-        cursor.execute("""
-            SELECT MAX(S.NUM_SEANCE) FROM SEANCE S
-            JOIN DETAILLE_CONSULTATION D ON S.ID_DETAILLE_CONSULTATION = D.ID_DETAILLE_CONSULTATION
-            JOIN CONSULTATION C ON D.ID_CONSULTATION = C.ID_CONSULTATION
-            JOIN PATIENT P ON C.ID_PATIENT = P.ID
-            WHERE D.OPERATION = ? AND P.ID = ?                                 
-
-        """, val)
-
-        num_seance = cursor.fetchone()[0]
-        print(num_seance)
-        if num_seance is None:
-        # Si aucune séance n'existe encore pour cette consultation, démarrer à 1
-            seance = 1
-        else:
-            # Incrémenter le numéro de séance
-            seance = num_seance + 1
+        
         
         
         if operation == "Autre" :
             self.manual_entry_window()
         else:
-            if operation == "Soin Composite Dent Antérieure Adulte" or operation == "Soin Composite Dent Postérieure Adulte" :
-                self.modele_dentaire(operation)
+            if operation == "Soin Composite Dent Antérieure Adulte" or operation == "Soin Composite Dent Postérieure Adulte" or operation == "Extraction Adulte" or operation == "Extraction Adulte Difficile" or operation == "Traitement Canalaire Adulte" :
+                self.modele_dentaire_adulte(operation)
             else:
-                if operation == "Prothèses Fixes" :
-                    self.prothse_fixi()
-                else:    
-                    if operation :
+                if operation == "Soin Composite Dent Antérieure Temporaire" or operation == "Soin Composite Dent Postérieure Temporaire" or operation == "Extraction Temporaire" or operation ==  "Traitement Canalaire Temporaire" :
+                    self.modele_dentaire_temporaire(operation)
+                else:        
+                    if operation == "Prothèses Fixes" :
+                        self.prothse_fixi()
+                    else:    
+                        if operation :
+                            # Connexion à la base de données Firebird
+                            def read_database_path(file_path='data_base.txt'):
+                                with open(file_path, 'r') as file:
+                                    return file.read().strip()
+
+                            def read_fbclient_path(file_path='fb_client.txt'):
+                                with open(file_path, 'r') as file:
+                                    return file.read().strip()
+
+                            database_path = read_database_path()
+                            fbclient_path = read_fbclient_path()
+
+                            conn = fdb.connect(
+                                dsn=database_path,
+                                user='SYSDBA',
+                                password='1234',
+                                charset='UTF8',
+                                fb_library_name=fbclient_path
+                            )
+                            cursor = conn.cursor()
+
+                            val = [operation, ID_patient]
+
+                            cursor.execute("""
+                                SELECT MAX(S.NUM_SEANCE) FROM SEANCE S
+                                JOIN DETAILLE_CONSULTATION D ON S.ID_DETAILLE_CONSULTATION = D.ID_DETAILLE_CONSULTATION
+                                JOIN CONSULTATION C ON D.ID_CONSULTATION = C.ID_CONSULTATION
+                                JOIN PATIENT P ON C.ID_PATIENT = P.ID
+                                WHERE D.OPERATION = ? AND P.ID = ?                                 
+
+                            """, val)
+
+                            num_seance = cursor.fetchone()[0]
+                            print(num_seance)
+                            if num_seance is None:
+                            # Si aucune séance n'existe encore pour cette consultation, démarrer à 1
+                                seance = 1
+                            else:
+                                # Incrémenter le numéro de séance
+                                seance = num_seance + 1
+                                
+                            prix = self.prix_operations[operation]
+                            # self.open_seance_window(prix, operation)
+                            self.table_operations.insert("", "end", values=(operation, prix, seance))
+                            self.operations.append((operation, prix))
+                            self.seances.append(seance)
+                            if seance == 1:
+                                self.operations_payement.append(prix)
                             
-                        prix = self.prix_operations[operation]
-                        # self.open_seance_window(prix, operation)
-                        self.table_operations.insert("", "end", values=(operation, prix, seance))
-                        self.operations.append((operation, prix))
-                        self.seances.append(seance)
-                        if seance == 1:
-                            self.operations_payement.append(prix)
-                        
-                        self.update_total()
+                            self.update_total()
 
     def open_seance_window(self, p, o):
         # Créer une fenêtre Toplevel
@@ -422,12 +426,12 @@ class Consultation:
         manual_window.destroy()
         prix = float(prix)
         self.open_seance_window(prix, operation)
-        self.table_operations.insert("", "end", values=(operation, prix, seance))
-        self.operations.append((operation, prix, seance))
-        self.update_total()
+        # self.table_operations.insert("", "end", values=(operation, prix, seance))
+        # self.operations.append((operation, prix, seance))
+        # self.update_total()
         
 
-    def modele_dentaire(self, operation):
+    def modele_dentaire_adulte(self, operation):
         # Créer la fenêtre principale
         def show_tooth_number(operation,tooth_number):
             ID_patient = self.entry_id_patient.get()
@@ -547,7 +551,123 @@ class Consultation:
             button.place(x=x, y=y, width=20, height=20)
 
 
+
+    def modele_dentaire_temporaire(self, operation):
+        # Créer la fenêtre principale
+        def show_tooth_number(operation,tooth_number):
+            ID_patient = self.entry_id_patient.get()
+            operation = f"{operation} {tooth_number}" 
+
+            # Connexion à la base de données Firebird
+            def read_database_path(file_path='data_base.txt'):
+                with open(file_path, 'r') as file:
+                    return file.read().strip()
+
+            def read_fbclient_path(file_path='fb_client.txt'):
+                with open(file_path, 'r') as file:
+                    return file.read().strip()
+
+            database_path = read_database_path()
+            fbclient_path = read_fbclient_path()
+
+            conn = fdb.connect(
+                dsn=database_path,
+                user='SYSDBA',
+                password='1234',
+                charset='UTF8',
+                fb_library_name=fbclient_path
+            )
+            cursor = conn.cursor()
+
+            val = [operation, ID_patient]
+
+            cursor.execute("""
+                SELECT MAX(S.NUM_SEANCE) FROM SEANCE S
+                JOIN DETAILLE_CONSULTATION D ON S.ID_DETAILLE_CONSULTATION = D.ID_DETAILLE_CONSULTATION
+                JOIN CONSULTATION C ON D.ID_CONSULTATION = C.ID_CONSULTATION
+                JOIN PATIENT P ON C.ID_PATIENT = P.ID
+                WHERE D.OPERATION = ? AND P.ID = ?                                 
+
+            """, val)
+
+            num_seance = cursor.fetchone()[0]
+            if num_seance is None:
+            # Si aucune séance n'existe encore pour cette consultation, démarrer à 1
+                seance = 1
+            else:
+                # Incrémenter le numéro de séance
+                seance = num_seance + 1
+            
+            prix = "5000"
+            prix = float(prix)
+            self.table_operations.insert("", "end", values=(operation, prix, seance))
+            self.operations.append((operation, prix))
+            self.seances.append(seance)
+            if seance == 1:
+                self.operations_payement.append(prix)            
+            self.update_total()
+
+        root = Toplevel(self.master)
+        root.title("Modèle d'anatomie dentaire")
+        root.resizable(False, False)
+
+        # Charger l'image du schéma dentaire
+        image_path = "images/42484894-les-dents-primaires-modèle-de-la-bouche-avec-des-enfants-mâchoire-supérieure-et-inférieure-et-ses.jpg"  # Remplacer avec le chemin vers l'image
+        image = Image.open(image_path)
+        image = image.resize((400, 600))  # Ajuster la taille de l'image si nécessaire
+        self.photo = ImageTk.PhotoImage(image)
+
+
+
+        # Créer un canevas pour afficher l'image
+        canvas = tk.Canvas(root, width=400, height=600)
+        canvas.pack()
+
+        # Afficher l'image sur le canevas
+        canvas.create_image(0, 0, anchor=tk.NW, image=self.photo)
+
+        # Positions des boutons (tu devras ajuster les coordonnées en fonction de l'image)
+        teeth_positions = {
+            # HAUT
+            55: (80, 245),
+            54: (90, 200),
+            53: (110,170),
+            52: (135,145),
+            51: (170,130),
+            61: (210,130),
+            62:(245,145),
+            63:(270,170),
+            64:(285,200),
+            65:(300,245),
+            
+            # BAS
+            
+            85:(80, 355),
+            84:(95, 395),
+            83:(115,435),
+            82:(145,460),
+            81:(175,470),
+            71:(205,470),
+            72:(235,460),
+            73:(265,435),
+            74:(285,395),
+            75:(300,355),
+            
+        }
+
+        # Créer des boutons pour chaque dent
+        for self.tooth_number, (x, y) in teeth_positions.items():
+            button = tk.Button(root, text=f"{self.tooth_number}", command=lambda t=self.tooth_number: show_tooth_number(operation,t))
+            # Positionner chaque bouton au-dessus de la dent
+            button.place(x=x, y=y, width=20, height=20)        
+
+
     def prothse_fixi(self):
+        ID_patient = self.entry_id_patient.get()
+
+        
+
+
         protheses_fixees = {
             "résine": 10000,
             "céramique": 20000,
@@ -585,9 +705,52 @@ class Consultation:
                     operation = f"{type_prothese} de {nombre_elements} elements"
                     prix = float(cout)
 
+                    # Connexion à la base de données Firebird
+                    def read_database_path(file_path='data_base.txt'):
+                        with open(file_path, 'r') as file:
+                            return file.read().strip()
+
+                    def read_fbclient_path(file_path='fb_client.txt'):
+                        with open(file_path, 'r') as file:
+                            return file.read().strip()
+
+                    database_path = read_database_path()
+                    fbclient_path = read_fbclient_path()
+
+                    conn = fdb.connect(
+                        dsn=database_path,
+                        user='SYSDBA',
+                        password='1234',
+                        charset='UTF8',
+                        fb_library_name=fbclient_path
+                    )
+                    cursor = conn.cursor()
+
+                    val = [operation, ID_patient]
+
+                    cursor.execute("""
+                        SELECT MAX(S.NUM_SEANCE) FROM SEANCE S
+                        JOIN DETAILLE_CONSULTATION D ON S.ID_DETAILLE_CONSULTATION = D.ID_DETAILLE_CONSULTATION
+                        JOIN CONSULTATION C ON D.ID_CONSULTATION = C.ID_CONSULTATION
+                        JOIN PATIENT P ON C.ID_PATIENT = P.ID
+                        WHERE D.OPERATION = ? AND P.ID = ?                                 
+
+                    """, val)
+
+                    num_seance = cursor.fetchone()[0]
+                    if num_seance is None:
+                    # Si aucune séance n'existe encore pour cette consultation, démarrer à 1
+                        seance = 1
+                    else:
+                        # Incrémenter le numéro de séance
+                        seance = num_seance + 1
+
+                    self.table_operations.insert("", "end", values=(operation, prix, seance))
                     self.operations.append((operation, prix))
-                    self.table_operations.insert("", "end", values=(operation, prix))            
-                    self.update_total() 
+                    self.seances.append(seance)
+                    if seance == 1:
+                        self.operations_payement.append(prix)            
+                    self.update_total()
 
 
 
